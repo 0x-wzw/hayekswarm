@@ -50,7 +50,7 @@ Source = "https://github.com/0x-wzw/hayekswarm"
 arXiv = "https://arxiv.org/abs/2606.02859"
 
 [tool.setuptools.packages.find]
-include = ["hayekmas*", "swarm*", "server*", "voidtether*"]
+include = ["hayekmas*", "swarm*", "server*", "voidtether*", "sdk*", "bridges*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
