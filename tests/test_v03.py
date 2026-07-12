@@ -664,8 +664,11 @@ class TestServerEndpoints:
         app = create_app()
         transport = ASGITransport(app=app)
         
-        # Use the same secret as the app
-        secret = os.environ.get("VOIDTETHER_HMAC_SECRET", "voidtether-dev-insecure-secret")
+        # Configure a shared secret for this test — there is no public default anymore.
+        # The server resolves VOIDTETHER_HMAC_SECRET lazily, so setting it here makes both
+        # the request signer and the server verifier use the same key.
+        os.environ["VOIDTETHER_HMAC_SECRET"] = "test-shared-secret"
+        secret = os.environ["VOIDTETHER_HMAC_SECRET"]
         verifier = HMACVerifier(secret=secret)
         
         payload = {

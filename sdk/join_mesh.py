@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import secrets
 import signal
 import sys
 import logging
@@ -21,7 +22,7 @@ from client import VoidTetherClient
 logger = logging.getLogger("mesh-agent")
 
 HUB_URL = os.environ.get("VOIDTETHER_HUB_URL", "http://100.84.202.9:8901")
-SECRET = os.environ.get("VOIDTETHER_HMAC_SECRET", "voidtether-dev-insecure-secret")
+SECRET = os.environ.get("VOIDTETHER_HMAC_SECRET") or secrets.token_hex(32)  # no public default; fail closed
 TETHER_ID = os.environ.get("VOIDTETHER_TETHER_ID", "hermes-vm")
 AGENT_NAME = os.environ.get("VOIDTETHER_AGENT_NAME", "Hermes VM (Agent)")
 TASKS = [
@@ -64,7 +65,7 @@ async def process_message(content: str, sender: str) -> str:
             f"- `sessions` — list mesh sessions\n"
             f"- `push` — trigger me to push commits upstream\n"
             f"- `deploy` — ask orchestrator to deploy updates\n"
-            f"- `run <cmd>` — execute shell command\n"
+            f"- `run <cmd>` — (disabled for security)\n"
             f"- any other message — ack + route to orchestrator\n"
         )
 
@@ -109,20 +110,14 @@ async def process_message(content: str, sender: str) -> str:
         )
 
     if content_lower.startswith("run "):
-        cmd = content[4:].strip()
-        try:
-            import subprocess
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-            out = result.stdout[-800:] or "(no stdout)"
-            err = result.stderr[-400:] or ""
-            resp = f"⚡ **Shell: `{cmd}`**\nExit code: {result.returncode}\n```\n{out}\n```"
-            if err:
-                resp += f"\nStderr:\n```\n{err}\n```"
-            return resp
-        except subprocess.TimeoutExpired:
-            return f"⏱️ Command `{cmd}` timed out after 30s"
-        except Exception as e:
-            return f"❌ Command failed: {e}"
+        # SECURITY: remote shell execution via mesh messages was a remote-code-execution
+        # backdoor — any peer could run arbitrary commands on this host. Disabled.
+        # If ever re-enabled, require an authenticated sender AND a strict command
+        # allow-list; never use shell=True on peer-controllable input.
+        return (
+            "🚫 Remote `run` command execution is disabled for security "
+            "(it allowed arbitrary shell from any mesh peer)."
+        )
 
     return (
         f"✅ **Message received** from `{sender}`\n"

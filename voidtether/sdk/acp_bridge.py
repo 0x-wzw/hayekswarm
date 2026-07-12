@@ -304,7 +304,7 @@ def main():
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     )
     
-    secret = args.secret or os.environ.get("VOIDTETHER_HMAC_SECRET", "voidtether-dev-insecure-secret")
+    secret = args.secret or os.environ.get("VOIDTETHER_HMAC_SECRET")  # no public default
     tasks = [t.strip() for t in args.tasks.split(",") if t.strip()]
     
     bridge = ACPStdioBridge(
