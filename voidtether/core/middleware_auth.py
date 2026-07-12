@@ -4,9 +4,20 @@ from fastapi import Request, HTTPException, Depends
 from fastapi.security import APIKeyHeader
 from voidtether.core.auth import HMACVerifier
 
-# Secret is resolved from env or default
-HMAC_SECRET = os.environ.get("VOIDTETHER_HMAC_SECRET", "voidtether-dev-insecure-secret")
-verifier = HMACVerifier(secret=HMAC_SECRET)
+# Verifier is resolved lazily so VOIDTETHER_HMAC_SECRET can be configured at runtime
+# (there is no public default secret — see voidtether.core.auth). When the env var is
+# unset, HMACVerifier uses a fail-closed ephemeral secret and all signatures are rejected.
+_verifier: HMACVerifier | None = None
+_verifier_secret: str | None = None
+
+
+def _get_verifier() -> HMACVerifier:
+    global _verifier, _verifier_secret
+    secret = os.environ.get("VOIDTETHER_HMAC_SECRET")
+    if _verifier is None or secret != _verifier_secret:
+        _verifier = HMACVerifier(secret=secret)
+        _verifier_secret = secret
+    return _verifier
 
 # Headers for authentication
 X_TETHER_SIGNATURE = APIKeyHeader(name="X-Tether-Signature")
@@ -24,7 +35,7 @@ async def verify_tether_auth(
     body = await request.body()
     data = body.decode("utf-8")
     
-    if not verifier.verify(data, signature, timestamp):
+    if not _get_verifier().verify(data, signature, timestamp):
         raise HTTPException(
             status_code=401, 
             detail="Invalid or expired Tether signature. Access denied."

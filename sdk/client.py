@@ -13,7 +13,7 @@ Usage (zero-config):
 Advanced (explicit config):
     client = VoidTetherClient(
         hub_url="http://100.84.202.9:8901",
-        secret="voidtether-dev-insecure-secret",
+        secret=os.environ["VOIDTETHER_HMAC_SECRET"],
         tether_id="my-agent",
         name="My Agent",
         protocol="hermes",
@@ -29,6 +29,7 @@ import time
 import json
 import asyncio
 import os
+import secrets
 import uuid
 from typing import Any, Callable, AsyncIterator
 from dataclasses import dataclass, field
@@ -44,7 +45,7 @@ except ImportError:
 # ── Defaults (zero-config) ────────────────────────────────────────────
 
 DEFAULT_HUB_URL = "http://100.84.202.9:8901"
-DEFAULT_SECRET = "voidtether-dev-insecure-secret"
+DEFAULT_SECRET = None  # no public default; set VOIDTETHER_HMAC_SECRET
 DEFAULT_PROTOCOL = "hermes"
 DEFAULT_TIMEOUT = 30.0
 
@@ -91,7 +92,11 @@ class VoidTetherClient:
     ):
         # Resolve from args → env → defaults
         self.hub_url = hub_url or os.environ.get("VOIDTETHER_HUB_URL", DEFAULT_HUB_URL)
-        self.secret = secret or os.environ.get("VOIDTETHER_HMAC_SECRET", DEFAULT_SECRET)
+        self.secret = secret or os.environ.get("VOIDTETHER_HMAC_SECRET")
+        if not self.secret:
+            # Fail closed: no shared secret configured -> use an ephemeral one so
+            # signatures will not verify against a real hub until it is set.
+            self.secret = secrets.token_hex(32)
         self.tether_id = tether_id or os.environ.get("VOIDTETHER_TETHER_ID", f"agent-{str(uuid.uuid4())[:8]}")
         self.name = name or f"Remote Agent {self.tether_id[-8:]}"
         self.protocol = protocol or DEFAULT_PROTOCOL
