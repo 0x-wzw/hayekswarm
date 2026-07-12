@@ -311,6 +311,13 @@ class TestA2AAdapter:
         manifest = a2a_card_to_manifest(card)
         assert manifest.origin_protocol == Protocol.A2A
         assert "review" in manifest.tasks
+        # protocols must be ProtocolEndpoint instances (regression: #9 built raw dicts)
+        assert all(isinstance(p, ProtocolEndpoint) for p in manifest.protocols)
+        assert manifest.protocols[0].protocol == Protocol.A2A
+        assert manifest.protocols[0].agent_card_url == "http://localhost:8080"
+        # manifest must serialize without AttributeError
+        d = manifest.to_dict()
+        assert d["protocols"][0]["protocol"] == "a2a"
 
 
 class TestHermesAdapter:

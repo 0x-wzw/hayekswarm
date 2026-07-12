@@ -126,7 +126,10 @@ class EconomicPopulation:
             key = lambda a: a.wealth
         with self._lock:
             if role is not None:
-                agents = self.get_by_role(role)
+                # Inline the role filter — calling get_by_role() here would
+                # re-acquire the non-reentrant lock and deadlock.
+                ids = self.by_role.get(role, set())
+                agents = [self._agents[aid] for aid in ids if aid in self._agents]
             else:
                 agents = list(self._agents.values())
         sorted_agents = sorted(agents, key=key, reverse=True)
