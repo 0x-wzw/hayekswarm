@@ -213,7 +213,7 @@ class TestProtocolBridge:
         bridge.register_adapter(Protocol.A2A, adapter)
         assert Protocol.A2A in bridge._adapters
 
-    def test_delegate_no_adapter(self):
+    async def test_delegate_no_adapter(self):
         router = TetherRouter()
         bridge = ProtocolBridge(router)
         manifest = TetherManifest(
@@ -226,10 +226,10 @@ class TestProtocolBridge:
             task_id="t-1", task_type="code_review", input_data={},
             source_agent="user", source_protocol=Protocol.HERMES,
         )
-        result = asyncio.get_event_loop().run_until_complete(bridge.delegate(task))
+        result = await bridge.delegate(task)
         assert "error" in result
 
-    def test_delegate_with_adapter(self):
+    async def test_delegate_with_adapter(self):
         router = TetherRouter()
         bridge = ProtocolBridge(router)
         adapter = A2AAdapter()
@@ -244,11 +244,11 @@ class TestProtocolBridge:
             task_id="t-2", task_type="code_review", input_data={"code": "x"},
             source_agent="user", source_protocol=Protocol.A2A,
         )
-        result = asyncio.get_event_loop().run_until_complete(bridge.delegate(task))
+        result = await bridge.delegate(task)
         # Should get a result (even if fake from stub execute)
         assert task.state == TaskState.COMPLETED or "error" in result
 
-    def test_delegate_callbacks(self):
+    async def test_delegate_callbacks(self):
         """Delegate should set state to RUNNING then COMPLETED."""
         router = TetherRouter()
         bridge = ProtocolBridge(router)
@@ -264,7 +264,7 @@ class TestProtocolBridge:
             task_id="t-3", task_type="research", input_data={"query": "test"},
             source_agent="user", source_protocol=Protocol.HERMES,
         )
-        asyncio.get_event_loop().run_until_complete(bridge.delegate(task))
+        await bridge.delegate(task)
         assert task.state == TaskState.COMPLETED
         assert task.assigned_to == "h1"
 

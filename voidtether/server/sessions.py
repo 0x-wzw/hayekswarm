@@ -323,11 +323,22 @@ class SessionManager:
     # ── Inactivity Timeout / Cleanup ──────────────────────────────────
 
     def _start_cleanup(self) -> None:
-        """Start the background session cleanup loop."""
+        """Start the background session cleanup loop.
+
+        Only starts when called from within a running event loop. Constructing a
+        SessionManager in plain sync code (e.g. tests) must not crash: on Python
+        3.10+ ``asyncio.ensure_future`` with no running loop raises
+        ``RuntimeError: no current event loop``. In that case the cleanup loop is
+        simply left unstarted until start_cleanup() is called under a loop.
+        """
         if self._running:
             return
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
         self._running = True
-        self._cleanup_task = asyncio.ensure_future(self._cleanup_loop())
+        self._cleanup_task = loop.create_task(self._cleanup_loop())
 
     async def _cleanup_loop(self) -> None:
         """Periodically check for and retire inactive sessions."""
