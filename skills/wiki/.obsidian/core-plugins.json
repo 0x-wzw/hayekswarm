@@ -1,0 +1,15 @@
+{
+  "promptDelete": false,
+  "alwaysUpdateLinks": true,
+  "showFrontmache": true,
+  "newFileLocation": "current",
+  "newFileFolderPath": "concepts",
+  "attachmentFolderPath": "raw/assets",
+  "userIgnoreFilters": [
+    "venv/",
+    ".venv/",
+    "__pycache__/",
+    ".git/",
+    "node_modules/"
+  ]
+}

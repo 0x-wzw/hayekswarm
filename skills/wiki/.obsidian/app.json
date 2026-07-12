@@ -1,0 +1,48 @@
+{
+  "obsidianVersion": "1.8.9",
+  "theme": "obsidian",
+  "accentColor": "#a277ff",
+  "baseFontSize": 15,
+  "enabledPlugins": [
+    "obsidian-git",
+    "obsidian-dataview",
+    "templater-obsidian",
+    "obsidian-graph-view",
+    "url-into-selection",
+    "obsidian-minimal-settings"
+  ],
+  "communityPluginLinks": [
+    "obsidian-git",
+    "dataview",
+    "templater-obsidian",
+    "url-into-selection",
+    "obsidian-minimal-settings"
+  ],
+  "foldHeading": true,
+  "foldIndent": true,
+  "showFrontmatter": true,
+  "showLineNumber": true,
+  "spellcheck": true,
+  "strictLineBreaks": true,
+  "autoPairBrackets": true,
+  "autoPairMarkdown": true,
+  "smartIndentList": true,
+  "rightToLeft": false,
+  "tabSize": 4,
+  "useTab": false,
+  "alwaysUpdateLinks": true,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "showUnsupportedFiles": true,
+  "attachmentFolderPath": "raw/assets",
+  "userIgnoreFilters": [
+    "venv/",
+    ".venv/",
+    "__pycache__/",
+    ".git/",
+    "node_modules/"
+  ],
+  "livePreview": true,
+  "readableLineLength": true,
+  "propertiesInDocument": "hidden"
+}

@@ -507,6 +507,60 @@ async def mesh_stats():
     return vt_bridge.get_stats()
 
 
+# ── Wiki API ──────────────────────────────────────────────────────────────────
+
+
+from server.wiki import init_wiki, get_wiki_stats, search_wiki, query_wiki, get_wiki_export, WIKI_PATH
+
+
+@app.post("/api/wiki/init", tags=["Wiki"])
+async def wiki_init():
+    """Initialize the wiki directory structure + Obsidian vault."""
+    result = init_wiki()
+    return result
+
+
+@app.get("/api/wiki/stats", tags=["Wiki"])
+async def wiki_stats():
+    """Get wiki statistics."""
+    return get_wiki_stats()
+
+
+@app.get("/api/wiki/search", tags=["Wiki"])
+async def wiki_search(q: str = "", max_results: int = 10):
+    """Search wiki pages by keyword."""
+    return {"results": search_wiki(q, max_results=max_results)}
+
+
+@app.post("/api/wiki/query", tags=["Wiki"])
+async def wiki_query(question: str):
+    """Query the wiki for relevant context."""
+    return query_wiki(question)
+
+
+@app.get("/api/wiki/export", tags=["Wiki"])
+async def wiki_export():
+    """Get wiki contents for Obsidian vault export."""
+    return get_wiki_export()
+
+
+@app.get("/api/wiki/vault", tags=["Wiki"])
+async def wiki_vault():
+    """Check if the wiki has an Obsidian vault configuration."""
+    vault_path = WIKI_PATH / ".obsidian"
+    if not vault_path.exists():
+        return {"status": "no_vault", "path": str(WIKI_PATH)}
+    return {
+        "status": "configured",
+        "path": str(WIKI_PATH),
+        "vault_dir": str(vault_path),
+        "templates": [
+            str(p.relative_to(vault_path))
+            for p in sorted(vault_path.rglob("*.md"))
+        ] if vault_path.exists() else [],
+    }
+
+
 # ── Health ────────────────────────────────────────────────────────────────────
 
 

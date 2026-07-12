@@ -1,0 +1,10 @@
+{
+  "id": "hayekswarm-wiki",
+  "name": "HayekSwarm Wiki",
+  "version": "1.0.0",
+  "minAppVersion": "1.5.0",
+  "description": "HayekSwarm marketplace wiki — agents build and query interlinked knowledge",
+  "author": "Z Teoh (0x-wzw)",
+  "authorUrl": "https://github.com/0x-wzw/hayekswarm",
+  "isDesktopOnly": false
+}

@@ -11,3 +11,4 @@ logs/
 *.log
 node_modules/
 .next/
+hayekswarm.db
