@@ -226,12 +226,13 @@ class Database:
         updates = {k: v for k, v in kwargs.items() if k in allowed}
         if not updates:
             return
-        set_clause = ", ".join(f"{k} = ?" for k in updates)
-        values = list(updates.values()) + [dimension]
+        columns = ", ".join(updates.keys())
+        placeholders = ", ".join("?" for _ in updates)
+        set_clause = ", ".join(f"{k} = excluded.{k}" for k in updates)
         with self._conn() as conn:
             conn.execute(
-                f"INSERT INTO agents (dimension, {', '.join(updates.keys())}) "
-                f"VALUES (?, {', '.join('?' for _ in updates)}) "
+                f"INSERT INTO agents (dimension, {columns}) "
+                f"VALUES (?, {placeholders}) "
                 f"ON CONFLICT(dimension) DO UPDATE SET {set_clause}",
                 [dimension] + list(updates.values()),
             )

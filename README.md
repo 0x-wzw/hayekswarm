@@ -1,216 +1,387 @@
-# 🏛️ HayekSwarm
+# HayekSwarm
 
-> *"The curious task of economics is to demonstrate to men how little they really know about what they imagine they can design."* — F.A. Hayek
+**Decentralized Multi-Agent Intelligence Marketplace + Protocol Mesh**
 
-**Decentralized multi-agent intelligence marketplace with protocol mesh.**
+HayekSwarm is a unified platform combining **Hayekian economic marketplaces** for multi-agent systems with **VoidTether's protocol mesh** for cross-framework agent connectivity. Agents discover each other, bid on tasks, negotiate prices, and collaborate across frameworks — all coordinated through a decentralized economic engine.
 
-HayekSwarm replaces central orchestration with Hayekian market economics. Agents compete via auctions for the right to act, exchange payments through bucket-brigade credit assignment, and evolve through economic selection. The VoidTether protocol mesh lets agents from any framework (A2A, MCP, Hermes, ACP, LangGraph, CrewAI, etc.) participate in the same economy.
+> **Hayekian economics + VoidTether connectivity = a self-organizing agent economy.**
 
-## Architecture
+---
+
+## Architecture Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                    HAYEKSWARM MARKETPLACE                         │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
-│  │ HayekMAS │  │ Pricing  │  │ 10-D     │  │ Consensus│       │
-│  │ Engine   │  │ Oracle   │  │ Council  │  │ (Raft)   │       │
-│  └─────┬────┘  └──────────┘  └──────────┘  └──────────┘       │
-│        │                                                        │
-│  ┌─────┴────────────────────────────────────────────────────┐  │
-│  │              VOIDTETHER PROTOCOL MESH                      │  │
-│  │  A2A │ MCP │ Hermes │ ACP │ Swarm │ LangGraph │ CrewAI   │  │
-│  └─────┬────────────────────────────────────────────────────┘  │
-│        │                                                        │
-│  ┌─────┴────────────────────────────────────────────────────┐  │
-│  │              EXTERNAL AGENTS (any framework)                │  │
-│  └──────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                     HayekSwarm Platform                      │
+│                                                             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ HayekMAS │  │  Swarm   │  │  Server  │  │ VoidTether│   │
+│  │ Economic │  │ Council  │  │ FastAPI  │  │ Protocol  │   │
+│  │ Engine   │  │ + Router │  │ REST API │  │ Mesh      │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+│                                                             │
+│  ┌──────────────────────────────────────────────────┐       │
+│  │              Web Frontend (Next.js)               │       │
+│  └──────────────────────────────────────────────────┘       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Components
+### Core Components
 
-| Layer | Component | Description |
-|-------|-----------|-------------|
-| **Economic** | HayekMAS | Auction loop, bucket-brigade payments, population evolution |
-| **Economic** | 10-D Council | D1-D10 dimension-specialized agents with model assignments |
-| **Economic** | PricingOracle | 33 models across 4 tiers, cost-per-token bid estimation |
-| **Economic** | ConsensusEngine | Weighted majority, Borda count, Delphi method, Raft protocol |
-| **Mesh** | VoidTether | Protocol-agnostic agent discovery, routing, and task delegation |
-| **Mesh** | 10 Adapters | A2A, MCP, Hermes, ACP, Swarm, CrewAI, LangGraph, GBrain, OpenClaw, K2 |
-| **API** | FastAPI | REST endpoints for tasks, agents, market, transactions, auth |
-| **API** | SQLite | Persistent storage for tasks, agents, transactions, API keys |
-| **API** | Background Worker | Polls for pending tasks, runs Council auctions |
-| **Web** | Next.js | Chat UI, agent dashboard, God View health monitor |
-| **Web** | Live Dashboard | Auto-refreshing HTML dashboard with agent table and stats |
+| Component | Description |
+|-----------|-------------|
+| **HayekMAS** | Multi-agent system with Hayekian economic engine — agents bid, trade, and specialize |
+| **Swarm** | 10-Dimensional Council, cost router, consensus (Raft), coordinator, message bus |
+| **Server** | FastAPI marketplace — REST API, auth, database, worker, VoidTether bridge |
+| **VoidTether** | Protocol mesh — adapters for A2A, MCP, ACP, Hermes, CrewAI, LangGraph, and more |
+| **Web** | Next.js frontend for monitoring and managing the agent economy |
+
+---
 
 ## Quick Start
 
-### Local (Python)
+### Local Development
 
 ```bash
-# Clone
-git clone https://github.com/0x-wzw/hayekswarm.git
+# Clone and install
+git clone <repo-url> hayekswarm
 cd hayekswarm
+pip install -e ".[server,dev]"
 
-# Install
-pip install -e ".[server]"
-
-# Start
+# Run the API server
 uvicorn server.app:app --reload --port 8000
 
-# Open dashboard
-open http://localhost:8000
+# In another terminal, run the worker
+python -m server.worker
 ```
 
-### Docker
+### Docker Compose
 
 ```bash
-docker compose up --build
-# Dashboard: http://localhost:8000
-# API Docs:  http://localhost:8000/docs
+# Start everything
+docker compose up -d
+
+# Check health
+curl http://localhost:8000/health
+
+# View logs
+docker compose logs -f api web
 ```
 
-### Tailscale (recommended for production)
+### With Tailscale
+
+Set the `TS_AUTHKEY` environment variable to join the Tailnet:
 
 ```bash
-# One-command deploy
-curl -fsSL https://raw.githubusercontent.com/0x-wzw/hayekswarm/main/scripts/deploy-tailscale.sh | bash
-
-# Or manually:
-sudo tailscale up --hostname=hayekswarm
-docker compose up -d --build
-# Access at: http://hayekswarm:8000 (on your tailnet)
+TS_AUTHKEY=tskey-auth-xxxxx docker compose up -d
 ```
+
+The `api` service registers as `hayekswarm` and the `web` service as `hayekswarm-web` on your Tailnet. The Tailscale socket is mounted from the host (`/var/run/tailscale`).
+
+---
 
 ## API Endpoints
 
-### Marketplace
+### Health & Status
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `POST /api/keys` | Create | Generate an API key |
-| `POST /api/tasks` | Submit | Submit a task — agents bid via auction |
-| `GET /api/tasks` | List | Your tasks with status |
-| `GET /api/tasks/{id}` | Get | Task result, winner, cost |
-| `GET /api/agents` | List | All agents with wealth, wins, status |
-| `GET /api/market` | Overview | Current prices, bids, agent health |
-| `GET /api/transactions` | List | Payment history |
-| `GET /api/stats` | Aggregate | Total tasks, revenue, agent stats |
-| `GET /health` | Health | Worker status, DB path |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/status` | System status with agent counts |
+
+### Agents
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/agents` | List all registered agents |
+| POST | `/agents` | Register a new agent |
+| GET | `/agents/{id}` | Get agent details |
+| DELETE | `/agents/{id}` | Unregister an agent |
+
+### Auctions
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/auctions` | List active auctions |
+| POST | `/auctions` | Create a new auction |
+| GET | `/auctions/{id}` | Get auction details |
+| POST | `/auctions/{id}/bid` | Place a bid |
+| POST | `/auctions/{id}/close` | Close an auction |
+
+### Tasks
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/tasks` | List tasks |
+| POST | `/tasks` | Create a task |
+| GET | `/tasks/{id}` | Get task status |
+| POST | `/tasks/{id}/assign` | Assign agent to task |
 
 ### VoidTether Mesh
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `GET /api/mesh/agents` | List | List registered mesh agents |
-| `POST /api/mesh/register` | Register | Register a VoidTether agent |
-| `POST /api/mesh/unregister/{id}` | Remove | Remove a mesh agent |
-| `GET /api/mesh/stats` | Stats | Bridge statistics |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/mesh/nodes` | List mesh nodes |
+| POST | `/mesh/connect` | Connect to a mesh node |
+| GET | `/mesh/adapters` | List available protocol adapters |
+
+---
 
 ## How Agents Work
 
-### The 10-D Council
+### The 10-Dimensional Council
 
-| Dim | Name | Model | Specialty |
-|-----|------|-------|-----------|
-| D1 | Synthesis | kimi-k2.6:cloud | Cross-domain integration |
-| D2 | Deep Reason | deepseek-v4-flash:cloud | Logical deduction |
-| D3 | Code | qwen3-coder:480b:cloud | Software engineering |
-| D4 | Vision | glm-5.1:cloud | Visual understanding |
-| D5 | Strategy | claude-sonnet-4:cloud | Planning, risk |
-| D6 | Analysis | gpt-5.2:cloud | Data-driven analysis |
-| D7 | General | llama-4.1:cloud | Broad knowledge |
-| D8 | Verification | deepseek-v4-flash:cloud | Fact-checking |
-| D9 | Research | kimi-k2.6:cloud | Deep research |
-| D10 | Think | deepseek-r1-671b:cloud | Deep thinking |
+Agents are evaluated across 10 dimensions:
 
-### The Auction
+1. **Capability** — What the agent can do (skills, tools, models)
+2. **Reliability** — Historical task completion rate
+3. **Speed** — Average response time
+4. **Cost** — Price per task
+5. **Quality** — Output quality score
+6. **Specialization** — Domain expertise depth
+7. **Availability** — Uptime and responsiveness
+8. **Reputation** — Peer reviews and ratings
+9. **Adaptability** — Ability to handle novel tasks
+10. **Security** — Trust score and audit compliance
 
-1. A task enters the marketplace
-2. Eligible agents compute bids (based on wealth, status, and model cost)
-3. Highest bidder wins, pays their bid to the previous winner (bucket-brigade)
-4. Winner executes the task using their assigned model
-5. Reward is applied to the winner's wealth
-6. Bankrupt agents are replaced via good/bad births
+### Auctions & Bidding
 
-### Protocol Mesh
+When a task arrives:
 
-Agents from any framework can participate by registering a TetherManifest:
+1. The **Cost Router** estimates the task's value
+2. An **auction** is created with the task specification
+3. Agents **bid** with price and capability claims
+4. The **Council** evaluates bids across the 10 dimensions
+5. The **winner** is selected by weighted scoring
+6. Payment is **settled** through the economic engine
+
+### Payments
+
+Agents earn reputation and (optionally) token-based payments. The Hayekian engine tracks:
+- **Balance** — Agent account balance
+- **Transactions** — Task payments and fees
+- **Reputation** — Weighted by task value and quality
+
+---
+
+## How the VoidTether Mesh Works
+
+VoidTether provides a **protocol mesh** that connects agents across different frameworks:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  VoidTether Mesh                      │
+│                                                       │
+│  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐    │
+│  │  A2A   │  │  MCP   │  │  ACP   │  │ Hermes │    │
+│  │ Agent  │  │ Server │  │ Client │  │ Agent  │    │
+│  └────────┘  └────────┘  └────────┘  └────────┘    │
+│                                                       │
+│  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐    │
+│  │CrewAI  │  │LangGrph│  │  K2    │  │OpenClaw│    │
+│  │ Agents │  │ Agents │  │ Agents │  │ Agents │    │
+│  └────────┘  └────────┘  └────────┘  └────────┘    │
+│                                                       │
+│  ┌────────┐  ┌────────┐  ┌────────┐                  │
+│  │ Swarm  │  │ GBrain │  │ Taste  │                  │
+│  │ Agents │  │ Agents │  │ Agents │                  │
+│  └────────┘  └────────┘  └────────┘                  │
+└─────────────────────────────────────────────────────┘
+```
+
+### Protocol Adapters
+
+| Adapter | Protocol | Description |
+|---------|----------|-------------|
+| **A2A** | Agent-to-Agent | Google's A2A protocol for inter-agent communication |
+| **MCP** | Model Context Protocol | Anthropic's MCP for tool/server integration |
+| **ACP** | Agent Communication Protocol | Hermes ACP for agent orchestration |
+| **Hermes** | Hermes Agent | Native Hermes agent integration |
+| **CrewAI** | CrewAI | CrewAI multi-agent crew support |
+| **LangGraph** | LangGraph | LangGraph agent integration |
+| **K2** | K2 Protocol | K2 agent protocol |
+| **OpenClaw** | OpenClaw | OpenClaw agent protocol |
+| **Swarm** | OpenAI Swarm | OpenAI Swarm pattern support |
+| **GBrain** | GBrain | GBrain agent protocol |
+| **Taste** | Taste | Taste protocol adapter |
+| **HayekSwarm** | Native | Native HayekSwarm agent adapter |
+
+### Mesh Discovery
+
+Agents announce themselves via the mesh discovery service. The mesh maintains a registry of:
+- **Node ID** — Unique agent identifier
+- **Capabilities** — What the agent can do
+- **Protocol** — Which adapter protocol it speaks
+- **Endpoint** — How to reach the agent
+- **Status** — Online/offline/busy
+
+---
+
+## How to Register External Agents
+
+### Via API
+
+```bash
+curl -X POST http://localhost:8000/agents \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "my-agent",
+    "capabilities": ["code-generation", "analysis"],
+    "endpoint": "http://agent-host:8080",
+    "protocol": "a2a",
+    "price_per_task": 0.01
+  }'
+```
+
+### Via SDK
 
 ```python
-from voidtether import TetherManifest, Protocol
+from sdk.client import HayekSwarmClient
 
-manifest = TetherManifest(
-    tether_id="my-hermes-agent",
-    name="Research Agent",
-    origin_protocol=Protocol.HERMES,
-    capabilities={"tasks": ["research", "web_search", "summarize"]},
+client = HayekSwarmClient(api_url="http://localhost:8000")
+agent = client.register_agent(
+    name="my-agent",
+    capabilities=["code-generation"],
+    endpoint="http://agent-host:8080",
+    protocol="a2a",
 )
-
-# Register in the marketplace
-import httpx
-httpx.post("http://hayekswarm:8000/api/mesh/register",
-    json=manifest.to_dict(),
-    headers={"X-API-Key": "your-key"})
 ```
+
+### Via VoidTether CLI
+
+```bash
+python -m voidtether.cli.vt register \
+  --name my-agent \
+  --capabilities code-generation \
+  --endpoint http://agent-host:8080 \
+  --protocol a2a
+```
+
+---
 
 ## Research LLM Wiki Integration
 
-HayekSwarm includes Karpathy's LLM Wiki pattern for persistent, compounding knowledge:
+The `skills/wiki/` directory contains a Research LLM Wiki skill that agents can use for knowledge retrieval during task execution. This enables agents to:
+
+- Look up domain-specific knowledge
+- Retrieve research papers and summaries
+- Access curated knowledge bases
+- Ground responses in verified information
+
+To use the wiki skill in agent prompts, reference it as a tool or context source.
+
+---
+
+## Tailscale Deployment Guide
+
+### Prerequisites
+
+1. A [Tailscale](https://tailscale.com) account
+2. An **auth key** from the Tailscale admin console
+3. Docker and Docker Compose installed
+
+### Setup
 
 ```bash
-# Set wiki path
-export WIKI_PATH="$HOME/wiki"
+# 1. Set your auth key
+export TS_AUTHKEY=tskey-auth-xxxxx
 
-# Create initial structure
-mkdir -p "$WIKI_PATH"/{raw/{articles,papers,transcripts,assets},entities,concepts,comparisons,queries}
+# 2. Start the stack
+docker compose up -d
+
+# 3. Verify Tailscale connection
+docker compose exec api tailscale status
+
+# 4. Access the web UI
+# Via Tailscale: http://hayekswarm-web:3000
+# Via localhost:  http://localhost:3000
 ```
 
-Wiki tasks flow through the marketplace auction — agents bid on ingest, query, and lint tasks, building a shared knowledge base that compounds over time.
+### Tailscale Serve (optional)
 
-## Deployment
-
-### Tailscale (Production)
+Expose the API and web UI as Tailscale Funnel or Serve endpoints:
 
 ```bash
-# One-command deploy
-curl -fsSL https://raw.githubusercontent.com/0x-wzw/hayekswarm/main/scripts/deploy-tailscale.sh | bash
-
-# Or step by step:
-sudo tailscale up --hostname=hayekswarm --accept-routes
-docker compose up -d --build
-
-# Create an API key
-curl -X POST http://localhost:8000/api/keys \
-  -H "Content-Type: application/json" \
-  -d '{"label":"admin"}'
-
-# Submit a task
-curl -X POST http://localhost:8000/api/tasks \
-  -H "X-API-Key: YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"content":"Design an API architecture","stakes":"medium"}'
-
-# Access from anywhere on your tailnet
-open http://hayekswarm:8000
+# On the host, after the containers are running:
+tailscale serve --bg --https=443 localhost:8000
+tailscale serve --bg --https=443 localhost:3000
 ```
 
-### Environment Variables
+### Multi-Node Deployment
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `HAYEKSWARM_DB` | `hayekswarm.db` | SQLite database path |
-| `OLLAMA_API_KEY` | — | API key for Ollama Cloud |
-| `OLLAMA_BASE_URL` | `https://ollama.com/v1` | Ollama API endpoint |
-| `TS_AUTHKEY` | — | Tailscale auth key (for headless deploy) |
-| `TS_HOSTNAME` | `hayekswarm` | Tailscale machine name |
+For a distributed agent mesh across multiple machines:
+
+```bash
+# Machine 1: API + Web
+TS_AUTHKEY=tskey-auth-xxxxx docker compose up -d
+
+# Machine 2: Worker node
+docker run -d --network host \
+  -e HAYEKSWARM_API_URL=http://hayekswarm:8000 \
+  -e TS_AUTHKEY=tskey-auth-xxxxx \
+  hayekswarm python -m server.worker
+```
+
+All nodes discover each other via the Tailnet.
+
+---
+
+## Project Structure
+
+```
+hayekswarm/
+├── server/              # FastAPI marketplace
+│   ├── app.py           # Combined FastAPI app
+│   ├── models.py        # Data models
+│   ├── database.py      # SQLite/Postgres storage
+│   ├── auth.py          # Authentication
+│   ├── worker.py        # Background worker
+│   └── voidtether_bridge.py  # VoidTether integration
+├── voidtether/          # Protocol mesh
+│   ├── core/            # Manifest, bridge, router, envelope
+│   ├── economy/         # Hayekian engine, router, auction
+│   ├── adapters/        # All protocol adapters
+│   ├── server/          # VoidTether FastAPI server
+│   ├── mesh/            # Discovery service
+│   ├── sdk/             # Client SDK
+│   └── cli/             # CLI tools
+├── hayekmas/            # Economic engine
+│   ├── base/            # Agent, MAS, population, pipeline
+│   ├── adapters/        # Domain adapters
+│   └── utils/           # LLM, logger, viz, data
+├── swarm/               # Council + cost router + consensus
+│   ├── council/         # 10-D Council agents
+│   ├── cost_router/     # Pricing oracle
+│   ├── consensus/       # Voting + Raft
+│   ├── coordinator.py   # Task coordinator
+│   ├── docker_sandbox.py
+│   ├── message_bus.py
+│   └── role_manager.py
+├── web/                 # Next.js frontend
+│   └── frontend/        # Next.js app
+├── skills/              # Skills directory
+│   └── wiki/            # Research LLM Wiki skill
+├── scripts/             # install.sh, setup.sh
+├── sdk/                 # External SDK
+├── bridges/             # External bridges
+├── examples/            # Usage examples
+├── tests/               # Test suite
+├── docker-compose.yml   # Tailscale-aware deployment
+├── Dockerfile           # Combined Docker image
+├── Dockerfile.web       # Frontend Docker image
+├── pyproject.toml       # Package config
+├── README.md            # This file
+├── AGENTS.md            # Agent instructions
+└── SKILL.md             # Skill definition
+```
+
+---
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+MIT — see [LICENSE](LICENSE).
 
-## References
+## Authors
 
-- [Economy of Minds (arXiv:2606.02859)](https://arxiv.org/abs/2606.02859)
-- [Karpathy's LLM Wiki](https://github.com/karpathy/llm-wiki)
-- [VoidTether Protocol Mesh](https://github.com/0x-wzw/voidtether)
+- Z Teoh (0x-wzw)
+- Nous Research

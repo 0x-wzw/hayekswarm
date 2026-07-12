@@ -13,23 +13,35 @@ import threading
 import os
 from typing import Optional, TextIO, List, Tuple
 
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.theme import Theme
+# Rich is optional — fall back to plain text if not installed
+try:
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich.theme import Theme
+    _HAS_RICH = True
+except ImportError:
+    Console = None
+    Panel = None
+    Table = None
+    Theme = None
+    _HAS_RICH = False
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Theme
 # ═══════════════════════════════════════════════════════════════════════════
 
-HAYEK_THEME = Theme({
-    "train": "bold green",
-    "eval": "bold cyan",
-    "bankrupt": "bold red",
-    "solvent": "green",
-    "header": "bold white",
-    "dim": "dim",
-})
+if _HAS_RICH:
+    HAYEK_THEME = Theme({
+        "train": "bold green",
+        "eval": "bold cyan",
+        "bankrupt": "bold red",
+        "solvent": "green",
+        "header": "bold white",
+        "dim": "dim",
+    })
+else:
+    HAYEK_THEME = None
 
 
 class HayekLogger:
@@ -57,7 +69,7 @@ class HayekLogger:
         self.verbose = False
         self.log_file: Optional[TextIO] = None
         self.task_log_file: Optional[TextIO] = None
-        self.console = Console(theme=HAYEK_THEME, highlight=False)
+        self.console = Console(theme=HAYEK_THEME, highlight=False) if _HAS_RICH else None
         self._lock = threading.RLock()
         self._thread_state = threading.local()
         self._initialized = True

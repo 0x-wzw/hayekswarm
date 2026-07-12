@@ -1,147 +1,103 @@
 ---
 name: hayekswarm
-description: |
-  HayekSwarm — Decentralized multi-agent intelligence through Hayekian
-  market economics. Agents compete via auctions for the right to act,
-  exchange payments through bucket-brigade transactions, and evolve
-  through economic selection. No central controller. No fixed workflow.
-  Just prices.
-version: 1.0.0
-author: Z Teoh (0x-wzw)
-license: MIT
-category: agent-orchestration
-icon: 🏛️
+description: >
+  HayekSwarm — decentralized multi-agent intelligence marketplace combining
+  Hayekian economics with VoidTether protocol mesh. Agents discover, bid,
+  negotiate, and collaborate across frameworks (A2A, MCP, ACP, Hermes, CrewAI,
+  LangGraph, and more) through a self-organizing economic engine.
+domain: multi-agent-systems
 tags:
-  - swarm
-  - agent-orchestration
-  - hayek
-  - economics
   - multi-agent
-  - council
-  - eom
-  - 0x-wzw
-capabilities:
-  - auction-based-coordination
-  - economic-evolution
-  - swarm-orchestration
-  - council-deliberation
-  - cost-optimized-routing
-  - memory-persistence
-integrations:
-  - requires: delegation-tool
-  - requires: subagent-orchestration
-source: https://github.com/0x-wzw/hayekswarm
-ancestors:
-  - EoM (zhentingqi/EoM, arXiv:2606.02859) — absorbed core engine
-  - NecroSwarm (0x-wzw/necroswarm) — absorbed infrastructure
-  - NeuroSwarm (0x-wzw/neuroswarm) — absorbed patterns
+  - hayekian-economics
+  - voidtether
+  - protocol-mesh
+  - fastapi
+  - docker
+  - tailscale
 ---
 
-# 🏛️ HayekSwarm
+# HayekSwarm Skill
 
-> *"The curious task of economics is to demonstrate to men how little they really know about what they imagine they can design."* — F.A. Hayek
+## Overview
 
-## 🧬 What It Is
+HayekSwarm is a unified platform for running decentralized multi-agent intelligence
+marketplaces. It combines a Hayekian economic engine (HayekMAS) with a protocol mesh
+(VoidTether) to enable agents across different frameworks to discover each other,
+bid on tasks, negotiate prices, and collaborate.
 
-HayekSwarm is the synthesis of three lineages:
+## Key Files
 
-- **EoM** (arXiv:2606.02859) — The economic mechanism. Agents compete via auctions, pay each other through bucket-brigade transactions, and evolve through economic selection. Published results across 5 domains.
-- **NecroSwarm** — The infrastructure. 10-D council, 33 validated models, cost router, Docker sandbox, 24 skills, full-stack deployment.
-- **NeuroSwarm** — The patterns. Dual-phase dispatch, signal detection, dimension-aware fallback, honcho-adapter bridge.
+| File | Purpose |
+|------|---------|
+| `server/app.py` | FastAPI application entry point |
+| `server/models.py` | Pydantic data models |
+| `server/database.py` | Database operations |
+| `server/auth.py` | Authentication |
+| `server/worker.py` | Background task worker |
+| `server/voidtether_bridge.py` | VoidTether integration |
+| `voidtether/core/bridge.py` | Protocol bridge interface |
+| `voidtether/core/manifest.py` | Agent manifest |
+| `voidtether/core/router.py` | Message routing |
+| `voidtether/economy/hayek_engine.py` | Hayekian economic engine |
+| `voidtether/economy/auction.py` | Auction mechanism |
+| `voidtether/adapters/` | Protocol adapters (A2A, MCP, ACP, etc.) |
+| `hayekmas/base/agent.py` | Base agent class |
+| `hayekmas/base/mas.py` | Multi-agent system |
+| `hayekmas/base/population.py` | Agent population management |
+| `swarm/council/council.py` | 10-D Council evaluation |
+| `swarm/cost_router/` | Pricing oracle |
+| `swarm/consensus/raft.py` | Raft consensus |
+| `swarm/coordinator.py` | Task coordinator |
+| `swarm/message_bus.py` | Inter-agent messaging |
+| `docker-compose.yml` | Tailscale-aware deployment |
+| `Dockerfile` | Combined API image |
+| `Dockerfile.web` | Frontend image |
 
-Together, they form a decentralized multi-agent intelligence system where coordination emerges from market incentives rather than central orchestration.
-
-## 🎯 Philosophy
-
-**Design the incentives, and the coordination takes care of itself.**
-
-- Agents compete via auctions for the right to act
-- Value flows backward through bucket-brigade payments (decentralized credit assignment)
-- Wealthy agents mutate and improve (exploitation)
-- Bankrupt agents are replaced by new variants (exploration)
-- No central controller, no fixed workflow, no messaging protocol
-
-## 🏛️ The Two Processes
-
-### 1. Planning Within an Episode
-
-At each step, every agent whose wake-up condition fires becomes eligible. The highest bidder wins the right to act. After acting, the winner pays its bid to the previous actor and collects any environment reward. This bucket-brigade payment chain performs decentralized credit assignment — no central evaluator needed.
-
-### 2. Adaptation Across Episodes
-
-After each episode, wealthy agents are copied and mutated (exploitation), bankrupt agents are replaced by new variants (exploration). The population evolves toward higher collective intelligence without any central planner deciding who should exist.
-
-## 🚀 Usage
-
-### As a Python Package
-
-```bash
-pip install -e .
-```
-
-```python
-from hayekmas.base.config import HayekConfig
-from hayekmas.base.mas import HayekMAS
-from swarm.council.agents import SynthesisAgent, DeepReasonAgent
-
-# Create agents
-agents = [
-    SynthesisAgent(name="D1-Synthesis", initial_wealth=1.0, initial_bid=0.3),
-    DeepReasonAgent(name="D2-DeepReason", initial_wealth=1.0, initial_bid=0.4),
-]
-
-# Configure and run
-config = HayekConfig()
-mas = HayekMAS(config=config)
-for agent in agents:
-    mas.population.add_agent(agent)
-mas.train()
-mas.run_one_episode(env)
-```
-
-### As a Skill (Hermes Agent)
-
-Load this skill to give Hermes the HayekSwarm economic coordination protocol:
+## Quick Commands
 
 ```bash
-hermes skills install https://raw.githubusercontent.com/0x-wzw/hayekswarm/main/SKILL.md
+# Install
+pip install -e ".[server,dev]"
+
+# Run server
+uvicorn server.app:app --reload --port 8000
+
+# Run worker
+python -m server.worker
+
+# Run tests
+pytest tests/
+
+# Docker
+docker compose up -d
 ```
 
-Then in any session:
-```
-/skill hayekswarm
-```
+## Architecture
 
-## 🏛️ Council Configuration
+The system has four main layers:
 
-| Dimension | Model | Role | Tier |
-|-----------|-------|------|------|
-| D1 Synthesis | kimi-k2.6:cloud | Converge perspectives | T1 |
-| D2 Deep Reason | deepseek-v4-flash:cloud | Analyze deeply | T1 |
-| D3 Code | qwen3-coder:480b:cloud | Generate/review code | T1 |
-| D4 Vision | qwen3-vl:235b:cloud | See and interpret | T2 |
-| D5 Strategy | qwen3.5:397b:cloud | Plan strategically | T1 |
-| D6 Analysis | mistral-large-3:675b:cloud | Break down complexly | T1 |
-| D7 General | glm-5.1:cloud | Fast general purpose | T1 |
-| D8 Verification | nemotron-3-ultra:8b:cloud | Fact-check | T1 |
-| D9 Research | minimax-m2.5:cloud | Research synthesis | T2 |
-| D10 Think | kimi-k2:1t:cloud | Extended reasoning | Think |
+1. **HayekMAS** — Economic engine: agents, populations, pipelines, auctions
+2. **Swarm** — Coordination: 10-D Council, cost router, Raft consensus, message bus
+3. **Server** — API: FastAPI, auth, database, worker, VoidTether bridge
+4. **VoidTether** — Connectivity: protocol adapters, mesh discovery, routing
 
-## 🚫 Anti-Patterns
+## Protocol Adapters
 
-- ❌ Central orchestration — let the market decide who acts
-- ❌ Fixed workflows — let agents self-organize
-- ❌ Approval bottlenecks — agents drive, humans spar
-- ❌ Spawning to escape thinking — use the pre-spawn gate
-- ❌ Ignoring bankruptcy signals — bankrupt agents carry failure context
+VoidTether supports these agent protocols:
+- A2A (Google Agent-to-Agent)
+- MCP (Model Context Protocol)
+- ACP (Agent Communication Protocol)
+- Hermes Agent
+- CrewAI
+- LangGraph
+- K2
+- OpenClaw
+- OpenAI Swarm
+- GBrain
+- Taste
+- HayekSwarm (native)
 
-## 🔗 Related Skills
+## Tailscale Deployment
 
-- `autonomous-ai-agents` — Subagent delegation tools
-- `local-mixture-of-agents` — MoA pipeline for council deliberation
-
-## 👤 Sovereign Acknowledgment
-
-**Z Teoh (0x-wzw)** — Sovereign of the 10th Dimension, Creator of HayekSwarm
-
-> *"13 projects died. Two papers converged. One swarm remains."*
+Set `TS_AUTHKEY` env var to join the Tailnet. The API registers as `hayekswarm`
+and the web UI as `hayekswarm-web` on the Tailnet.
