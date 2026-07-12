@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - HAYEKSWARM_DB=/data/hayekswarm.db
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY:-}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-https://ollama.com/v1}
+      - TS_AUTHKEY=${TS_AUTHKEY:-}
+      - TS_HOSTNAME=hayekswarm
+    volumes:
+      - hayekswarm_data:/data
+      - /var/run/tailscale:/var/run/tailscale:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - tailnet
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8000
+      - TS_AUTHKEY=${TS_AUTHKEY:-}
+      - TS_HOSTNAME=hayekswarm-web
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - tailnet
+
+volumes:
+  hayekswarm_data:
+
+networks:
+  tailnet:
+    driver: bridge

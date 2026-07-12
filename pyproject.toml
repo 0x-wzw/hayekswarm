@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hayekswarm"
+version = "1.0.0"
+description = "Decentralized multi-agent intelligence marketplace with protocol mesh — Hayekian economics + VoidTether connectivity"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+authors = [{name = "Z Teoh (0x-wzw)"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "pydantic>=2.0",
+    "tqdm>=4.0",
+]
+
+[project.optional-dependencies]
+server = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "httpx>=0.27.0",
+    "websockets>=12.0",
+    "sse-starlette>=1.8.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1.0",
+]
+all = [
+    "hayekswarm[server,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/0x-wzw/hayekswarm"
+Source = "https://github.com/0x-wzw/hayekswarm"
+arXiv = "https://arxiv.org/abs/2606.02859"
+
+[tool.setuptools.packages.find]
+include = ["hayekmas*", "swarm*", "server*", "voidtether*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

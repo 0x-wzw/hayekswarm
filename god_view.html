@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoidTether · God View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F6F7F9;
+            --card: #FFFFFF;
+            --border: #E8EAED;
+            --border-strong: #D5D8DD;
+            --text: #14181F;
+            --text-2: #5B6672;
+            --text-3: #98A1AD;
+            --accent: #2F62F4;
+            --accent-hover: #2350D8;
+            --accent-weak: #EEF3FE;
+            --accent-line: #D5E1FD;
+            --green: #16915B;
+            --green-weak: #E9F7EF;
+            --amber: #B4690E;
+            --amber-weak: #FBF1E3;
+            --red: #D64545;
+            --red-weak: #FCEDED;
+            --violet: #7A5AF0;
+            --mono: 'JetBrains Mono', ui-monospace, monospace;
+            --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+            --shadow-md: 0 4px 12px rgba(16,24,40,.08), 0 2px 4px rgba(16,24,40,.04);
+        }
+        * { -webkit-font-smoothing: antialiased; box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+        .mono { font-family: var(--mono); }
+
+        /* Surfaces */
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); }
+        .hoverable { transition: background .15s ease, border-color .15s ease, box-shadow .15s ease; }
+        .hoverable:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+        /* Legacy aliases kept so dynamically-rendered markup stays consistent */
+        .glass { background: var(--card); border: 1px solid var(--border); border-radius: 14px; }
+        .glass-hover { transition: background .15s ease, border-color .15s ease; }
+        .glass-hover:hover { background: #FAFBFC; border-color: var(--border-strong); }
+        .neon-border { border: 1px solid var(--border); }
+        .neon-text { color: var(--accent); }
+
+        /* Text roles */
+        .muted { color: var(--text-2); }
+        .muted2 { color: var(--text-3); }
+        .accent { color: var(--accent); }
+
+        /* Chips / pills */
+        .chip { display: inline-flex; align-items: center; font-family: var(--mono); font-size: 11px; line-height: 1.4;
+                padding: 2px 7px; border-radius: 6px; background: #F1F3F5; color: var(--text-2); border: 1px solid var(--border); }
+        .chip-accent { background: var(--accent-weak); color: var(--accent); border-color: var(--accent-line); }
+
+        /* Buttons */
+        .btn-icon { color: var(--text-2); border-radius: 8px; transition: background .15s, color .15s; }
+        .btn-icon:hover { background: #F1F3F5; color: var(--text); }
+        .btn-primary { background: var(--accent); color: #fff; border-radius: 9px; transition: background .15s; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+        /* Inputs */
+        .input { background: #fff; border: 1px solid var(--border-strong); border-radius: 10px; color: var(--text); transition: border-color .15s, box-shadow .15s; }
+        .input::placeholder { color: var(--text-3); }
+        .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
+        .input:disabled { background: #F6F7F9; opacity: .7; cursor: not-allowed; }
+
+        /* Tabs */
+        .tab-btn { position: relative; color: var(--text-2); transition: color .15s; }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--accent); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 12px; right: 12px; height: 2px; background: var(--accent); border-radius: 2px 2px 0 0; }
+
+        /* Message bubbles */
+        .bubble { max-width: 34rem; padding: 10px 14px; font-size: 14px; line-height: 1.55; word-break: break-word; white-space: pre-wrap; }
+        .bubble-in { background: #fff; border: 1px solid var(--border); border-radius: 14px; border-top-left-radius: 4px; color: var(--text); box-shadow: var(--shadow-sm); }
+        .bubble-out { background: var(--accent); color: #fff; border-radius: 14px; border-top-right-radius: 4px; }
+
+        /* Status */
+        .st-healthy { color: var(--green); }  .bg-healthy { background: var(--green-weak); border-color: #BFE8CF; }
+        .st-degraded { color: var(--amber); } .bg-degraded { background: var(--amber-weak); border-color: #F0D9B5; }
+        .st-unhealthy { color: var(--red); }  .bg-unhealthy { background: var(--red-weak); border-color: #F3C9C9; }
+        .st-unknown { color: var(--text-3); } .bg-unknown { background: #F1F3F5; border-color: var(--border); }
+
+        /* Status dots */
+        .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+        .dot-ok { background: var(--green); }  .dot-bad { background: var(--red); }  .dot-idle { background: var(--text-3); }
+
+        /* Avatars */
+        .avatar { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: white; flex-shrink: 0; }
+
+        /* Scrollbars */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-thin::-webkit-scrollbar { width: 8px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #DDE1E6; border-radius: 4px; }
+        .chat-scroll::-webkit-scrollbar { width: 8px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #DDE1E6; border-radius: 4px; }
+
+        /* Semantic sphere */
+        .grid-bg { background-image: linear-gradient(rgba(20,24,31,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(20,24,31,.035) 1px, transparent 1px); background-size: 34px 34px; }
+        .orbit-node { background: #fff; border: 1px solid var(--accent-line); box-shadow: var(--shadow-sm); color: var(--accent); }
+        .orbit-node:hover { background: var(--accent-weak); }
+        @keyframes orbit { from { transform: rotate(0deg) translateX(var(--radius)) rotate(0deg); } to { transform: rotate(360deg) translateX(var(--radius)) rotate(-360deg); } }
+        .orbit-node { animation: orbit var(--duration, 20s) linear infinite; }
+
+        /* Motion — quiet by default */
+        @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fade-in .2s ease-out; }
+        @keyframes soft-ping { 0% { transform: scale(1); opacity: .35; } 100% { transform: scale(1.9); opacity: 0; } }
+        .pulse-ring { animation: soft-ping 2.8s ease-out infinite; }
+        .blink { /* intentionally static in the light theme */ }
+
+        /* Connection banner */
+        #conn-banner { transition: transform .3s ease, opacity .3s ease; }
+        #conn-banner.hidden-banner { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+
+        /* Toasts */
+        #toast-stack { position: fixed; bottom: 20px; right: 20px; z-index: 60; display: flex; flex-direction: column; gap: 8px; }
+        .toast { min-width: 220px; max-width: 340px; padding: 10px 14px; border-radius: 10px; font-size: 13px;
+                 background: #fff; border: 1px solid var(--border); color: var(--text); box-shadow: var(--shadow-md); animation: fade-in .2s ease-out; }
+        .toast.ok { border-left: 3px solid var(--green); }
+        .toast.err { border-left: 3px solid var(--red); }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinning { animation: spin .7s linear infinite; }
+
+        /* Accessibility */
+        :focus { outline: none; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+            .orbit-node { animation: none !important; }
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex text-[13px]">
+
+    <!-- Connection banner -->
+    <div id="conn-banner" role="alert" aria-live="assertive"
+         class="hidden-banner fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 py-1.5 text-[13px] font-medium text-white" style="background: var(--red);">
+        <i data-lucide="wifi-off" class="w-3.5 h-3.5"></i>
+        <span id="conn-banner-text">Hub unreachable — reconnecting…</span>
+    </div>
+    <div id="toast-stack" aria-live="polite"></div>
+
+    <!-- ══ SIDEBAR ══ -->
+    <aside class="w-72 bg-white border-r flex flex-col h-full z-20" style="border-color: var(--border);">
+        <div class="px-5 py-4 border-b" style="border-color: var(--border);">
+            <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white" style="background: var(--accent);">
+                    <i data-lucide="git-fork" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h1 class="font-semibold tracking-tight text-[14px] leading-none">VoidTether</h1>
+                    <div class="text-[11px] muted2 mt-0.5">Mesh Hub</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto scrollbar-thin">
+            <div class="p-4">
+                <h2 class="text-[11px] font-semibold uppercase tracking-wider muted2 mb-3 flex items-center gap-2">
+                    Tethered Agents
+                    <span id="sidebar-agent-count" class="ml-auto chip">0</span>
+                </h2>
+                <div id="agent-list" class="space-y-1.5"></div>
+            </div>
+        </div>
+
+        <div class="px-4 py-3 border-t flex items-center justify-between text-[11px]" style="border-color: var(--border);">
+            <span class="muted2 mono">v<span id="server-version">0.4.0</span></span>
+            <div class="flex items-center gap-1.5">
+                <span class="dot dot-ok"></span>
+                <span class="muted">Mesh active</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ══ MAIN ══ -->
+    <main class="flex-1 flex flex-col h-full">
+        <header class="h-14 bg-white border-b flex items-center justify-between px-6 shrink-0" style="border-color: var(--border);">
+            <nav class="flex items-center gap-1 h-14" role="tablist" aria-label="Dashboard views">
+                <button onclick="switchTab('mesh')" id="tab-mesh" role="tab" aria-selected="true" aria-controls="view-mesh" class="tab-btn active px-3 h-14 text-[13px] font-medium flex items-center gap-2">
+                    <i data-lucide="network" class="w-4 h-4"></i> Neural Mesh
+                </button>
+                <button onclick="switchTab('agents')" id="tab-agents" role="tab" aria-selected="false" aria-controls="view-agents" class="tab-btn px-3 h-14 text-[13px] font-medium flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4"></i> Agents
+                </button>
+                <button onclick="switchTab('health')" id="tab-health" role="tab" aria-selected="false" aria-controls="view-health" class="tab-btn px-3 h-14 text-[13px] font-medium flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4"></i> Health
+                </button>
+                <button onclick="switchTab('sphere')" id="tab-sphere" role="tab" aria-selected="false" aria-controls="view-sphere" class="tab-btn px-3 h-14 text-[13px] font-medium flex items-center gap-2">
+                    <i data-lucide="orbit" class="w-4 h-4"></i> Semantic Sphere
+                </button>
+            </nav>
+            <div class="flex items-center gap-3">
+                <span id="last-updated" class="text-[11px] mono muted2" title="Last successful refresh">—</span>
+                <div id="hub-status-badge" class="flex items-center gap-2 px-2.5 py-1 rounded-lg text-[11px]" style="background:#F1F3F5;">
+                    <span id="hub-status-dot" class="dot dot-ok"></span>
+                    <span class="muted">Hub</span>
+                    <span class="font-semibold" id="hub-status-text">Alive</span>
+                </div>
+                <button id="refresh-btn" onclick="refreshAll()" aria-label="Refresh all data" title="Refresh" class="btn-icon p-1.5">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ══ TAB: NEURAL MESH ══ -->
+        <div id="view-mesh" class="flex-1 overflow-hidden grid grid-cols-12 gap-4 p-4">
+            <!-- Sessions + Backups -->
+            <section class="col-span-3 flex flex-col gap-4 overflow-hidden">
+                <div class="flex-1 card overflow-hidden flex flex-col min-h-0">
+                    <div class="px-4 py-3 border-b flex justify-between items-center" style="border-color: var(--border);">
+                        <h3 class="font-semibold text-[13px] flex items-center gap-2">
+                            <i data-lucide="layers" class="w-4 h-4 accent"></i> Sessions
+                        </h3>
+                        <span id="session-count" class="chip">0</span>
+                    </div>
+                    <div id="session-grid" class="flex-1 overflow-y-auto p-2.5 space-y-1.5 scrollbar-hide"></div>
+                </div>
+                <div class="h-32 card overflow-hidden flex flex-col">
+                    <div class="px-4 py-2.5 border-b flex items-center gap-2" style="border-color: var(--border);">
+                        <i data-lucide="database" class="w-3.5 h-3.5 muted2"></i>
+                        <span class="font-semibold text-[12px]">Backups</span>
+                    </div>
+                    <div id="backups-view" class="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide"></div>
+                </div>
+            </section>
+
+            <!-- Chat -->
+            <section class="col-span-9 card overflow-hidden flex flex-col">
+                <div class="px-5 py-3 border-b flex justify-between items-center" style="border-color: var(--border);">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="messages-square" class="w-4 h-4" style="color: var(--violet);"></i>
+                        <span id="active-session-title" class="font-semibold text-[13px]">No session selected</span>
+                    </div>
+                    <span id="stream-status" class="text-[10px] mono px-2 py-0.5 rounded" style="background:#F1F3F5; color: var(--text-3);">OFFLINE</span>
+                </div>
+                <div id="chat-stream" class="flex-1 overflow-y-auto p-6 space-y-4 chat-scroll">
+                    <div class="h-full flex flex-col items-center justify-center muted2 gap-2">
+                        <i data-lucide="message-square-dashed" class="w-8 h-8"></i>
+                        <span class="text-[13px]">Select a session to view its message stream</span>
+                    </div>
+                </div>
+                <div class="p-3 border-t" style="border-color: var(--border);">
+                    <div class="relative flex items-center">
+                        <input id="msg-input" type="text" placeholder="Select a session to send a message…" aria-label="Message to send into the mesh" disabled
+                            class="input w-full pl-4 pr-11 py-2.5 text-[14px]"
+                            onkeypress="if(event.key==='Enter') sendMessage()">
+                        <button id="send-btn" onclick="sendMessage()" aria-label="Send message" disabled class="btn-primary absolute right-1.5 p-1.5">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ══ TAB: SEMANTIC SPHERE ══ -->
+        <div id="view-sphere" class="flex-1 overflow-hidden grid grid-cols-12 gap-4 p-4 hidden">
+            <section class="col-span-8 card overflow-hidden flex flex-col relative">
+                <div class="px-5 py-3 border-b flex justify-between items-center" style="border-color: var(--border);">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="orbit" class="w-4 h-4 accent"></i>
+                        <span class="font-semibold text-[13px]">Semantic Sphere</span>
+                    </div>
+                    <span id="sphere-session-label" class="text-[11px] mono muted2">No session selected</span>
+                </div>
+                <div id="sphere-viewport" class="flex-1 relative overflow-hidden grid-bg" style="background:#FBFCFD;">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div id="center-node" class="relative z-20 w-20 h-20 rounded-full flex items-center justify-center font-semibold text-[11px] text-center p-2 transition-all duration-500 scale-0"
+                             style="background:#fff; border:1px solid var(--accent-line); box-shadow:0 0 0 6px var(--accent-weak); color: var(--accent);">
+                            CORE
+                            <div class="absolute inset-0 rounded-full pulse-ring" style="background: var(--accent-weak);"></div>
+                        </div>
+                        <div id="orbitals-container" class="absolute inset-0 flex items-center justify-center"></div>
+                        <div id="entity-cloud" class="absolute inset-0 pointer-events-none"></div>
+                    </div>
+                    <div id="sphere-hint" class="absolute inset-0 flex flex-col items-center justify-center gap-2 muted2 pointer-events-none">
+                        <i data-lucide="orbit" class="w-8 h-8"></i>
+                        <span class="text-[13px]">Select a session in Neural Mesh to map its semantic links</span>
+                    </div>
+                </div>
+            </section>
+            <section class="col-span-4 flex flex-col gap-4 overflow-hidden">
+                <div class="card overflow-hidden flex flex-col flex-1 min-h-0">
+                    <div class="px-4 py-3 border-b flex items-center gap-2" style="border-color: var(--border);">
+                        <i data-lucide="tag" class="w-4 h-4 accent"></i>
+                        <span class="font-semibold text-[13px]">Shared Entities</span>
+                    </div>
+                    <div class="p-3 overflow-y-auto scrollbar-hide flex-1">
+                        <div id="entity-list" class="flex flex-wrap gap-1.5">
+                            <span class="muted2 text-[12px]">No entities mapped</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card overflow-hidden flex flex-col flex-1 min-h-0">
+                    <div class="px-4 py-3 border-b flex items-center justify-between" style="border-color: var(--border);">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="git-branch" class="w-4 h-4" style="color: var(--violet);"></i>
+                            <span class="font-semibold text-[13px]">Neural Links</span>
+                        </div>
+                        <span id="sphere-link-count" class="chip">0</span>
+                    </div>
+                    <div id="sphere-links" class="flex-1 overflow-y-auto p-2 space-y-1.5 scrollbar-hide">
+                        <div class="muted2 text-[12px] text-center p-4">No linked sessions</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ══ TAB: AGENTS ══ -->
+        <div id="view-agents" class="flex-1 overflow-y-auto p-6 scrollbar-thin hidden">
+            <div class="max-w-5xl mx-auto space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-semibold text-[17px]">Agent Registry</h2>
+                    <button onclick="refreshAgentsGrid()" class="text-[12px] muted hover:text-[var(--accent)] flex items-center gap-1.5">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh
+                    </button>
+                </div>
+                <div id="agents-grid" class="grid grid-cols-3 gap-4"></div>
+            </div>
+        </div>
+
+        <!-- ══ TAB: HEALTH ══ -->
+        <div id="view-health" class="flex-1 overflow-y-auto p-6 scrollbar-thin hidden">
+            <div class="max-w-6xl mx-auto space-y-4">
+                <!-- Metric cards -->
+                <div class="grid grid-cols-6 gap-3">
+                    <div class="card hoverable p-4">
+                        <div class="flex items-center justify-between mb-2"><span class="text-[11px] uppercase tracking-wider muted2 font-semibold">Hub</span><span id="health-hub-dot" class="dot dot-ok"></span></div>
+                        <div id="health-hub-status" class="text-[19px] font-semibold">Alive</div>
+                        <div id="health-hub-version" class="text-[11px] muted2 mono mt-0.5">v0.4.0</div>
+                    </div>
+                    <div class="card hoverable p-4">
+                        <div class="flex items-center justify-between mb-2"><span class="text-[11px] uppercase tracking-wider muted2 font-semibold">Agents</span><i data-lucide="cpu" class="w-3.5 h-3.5 accent"></i></div>
+                        <div id="health-agent-count" class="text-[19px] font-semibold">0</div>
+                        <div class="text-[11px] muted2 mt-0.5">Registered</div>
+                    </div>
+                    <div class="card hoverable p-4">
+                        <div class="flex items-center justify-between mb-2"><span class="text-[11px] uppercase tracking-wider muted2 font-semibold">Sessions</span><i data-lucide="layers" class="w-3.5 h-3.5" style="color: var(--violet);"></i></div>
+                        <div id="health-session-count" class="text-[19px] font-semibold">0</div>
+                        <div class="text-[11px] muted2 mt-0.5">Active</div>
+                    </div>
+                    <div class="card hoverable p-4">
+                        <div class="flex items-center justify-between mb-2"><span class="text-[11px] uppercase tracking-wider muted2 font-semibold">Event Bus</span><i data-lucide="radio" class="w-3.5 h-3.5 accent"></i></div>
+                        <div id="health-sub-count" class="text-[19px] font-semibold">0</div>
+                        <div class="text-[11px] muted2 mt-0.5">Subscribers</div>
+                    </div>
+                    <div class="card hoverable p-4">
+                        <div class="flex items-center justify-between mb-2"><span class="text-[11px] uppercase tracking-wider muted2 font-semibold">Conn Pool</span><i data-lucide="share-2" class="w-3.5 h-3.5 accent"></i></div>
+                        <div id="health-pool-count" class="text-[19px] font-semibold">0</div>
+                        <div class="text-[11px] muted2 mt-0.5">Connections</div>
+                    </div>
+                    <div class="card hoverable p-4">
+                        <div class="flex items-center justify-between mb-2"><span class="text-[11px] uppercase tracking-wider muted2 font-semibold">Persist</span><span id="health-persist-dot" class="dot dot-idle"></span></div>
+                        <div id="health-persist-status" class="text-[19px] font-semibold muted">Off</div>
+                        <div id="health-persist-path" class="text-[11px] muted2 mono mt-0.5 truncate">in-memory</div>
+                    </div>
+                </div>
+
+                <!-- Agent health + session vitals -->
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-7 card overflow-hidden flex flex-col">
+                        <div class="px-4 py-3 border-b flex justify-between items-center" style="border-color: var(--border);">
+                            <div class="flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 accent"></i><span class="font-semibold text-[13px]">Agent Health Matrix</span></div>
+                            <span id="health-agent-detail-count" class="text-[11px] mono muted2">0 agents</span>
+                        </div>
+                        <div class="overflow-x-auto flex-1 max-h-80">
+                            <table class="w-full text-[13px]">
+                                <thead class="sticky top-0" style="background:#FAFBFC;">
+                                    <tr class="text-[10px] uppercase tracking-wider muted2 border-b" style="border-color: var(--border);">
+                                        <th class="text-left px-3 py-2.5 font-semibold">Agent</th>
+                                        <th class="text-left px-3 py-2.5 font-semibold">Protocol</th>
+                                        <th class="text-left px-3 py-2.5 font-semibold">Status</th>
+                                        <th class="text-left px-3 py-2.5 font-semibold">Origin</th>
+                                        <th class="text-right px-3 py-2.5 font-semibold">Latency</th>
+                                        <th class="text-right px-3 py-2.5 font-semibold">Fails</th>
+                                        <th class="text-right px-3 py-2.5 font-semibold">Wins</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="health-agent-table">
+                                    <tr><td colspan="7" class="p-8 text-center muted2 text-[13px]">No agents registered</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-span-5 card overflow-hidden flex flex-col">
+                        <div class="px-4 py-3 border-b flex justify-between items-center" style="border-color: var(--border);">
+                            <div class="flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4" style="color: var(--violet);"></i><span class="font-semibold text-[13px]">Session Vitals</span></div>
+                            <span id="health-session-detail-count" class="text-[11px] mono muted2">0 sessions</span>
+                        </div>
+                        <div class="overflow-y-auto flex-1 scrollbar-hide max-h-80">
+                            <div id="health-session-list" class="p-3 space-y-2">
+                                <div class="muted2 text-[13px] text-center p-4">No active sessions</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bridge + retry -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="card p-5">
+                        <div class="flex items-center gap-2 mb-4"><i data-lucide="settings-2" class="w-4 h-4 accent"></i><span class="font-semibold text-[13px]">Protocol Bridge</span></div>
+                        <div id="health-bridge-stats" class="space-y-2.5"></div>
+                    </div>
+                    <div class="card p-5">
+                        <div class="flex items-center gap-2 mb-4"><i data-lucide="repeat" class="w-4 h-4" style="color: var(--amber);"></i><span class="font-semibold text-[13px]">Retry &amp; Timeout Policy</span></div>
+                        <div id="health-retry-stats" class="space-y-2.5"></div>
+                    </div>
+                </div>
+
+                <!-- Event log -->
+                <div class="card overflow-hidden flex flex-col" style="max-height: 260px;">
+                    <div class="px-4 py-3 border-b flex justify-between items-center" style="border-color: var(--border);">
+                        <div class="flex items-center gap-2"><span id="health-live-dot" class="dot dot-idle"></span><span class="font-semibold text-[13px]">Live Event Log</span></div>
+                        <span class="text-[11px] mono muted2">Real-time SSE feed</span>
+                    </div>
+                    <div id="health-event-log" class="flex-1 overflow-y-auto p-3 space-y-0.5 mono text-[12px] scrollbar-hide"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let currentSessionId = null;
+        let eventSource = null;
+        let healthEventSource = null;
+        let healthPollInterval = null;
+        let meshPollInterval = null;
+        let activeTab = 'mesh';
+        let hubConnected = true;
+        let streamRetry = null;
+
+        // ── Utilities ─────────────────────────────────────────────────
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+            ));
+        }
+        function timeAgo(iso) {
+            if (!iso) return '';
+            const then = new Date(iso).getTime();
+            if (isNaN(then)) return '';
+            const s = Math.floor((Date.now() - then) / 1000);
+            if (s < 5) return 'just now';
+            if (s < 60) return `${s}s ago`;
+            if (s < 3600) return `${Math.floor(s/60)}m ago`;
+            if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+            return `${Math.floor(s/86400)}d ago`;
+        }
+        function toast(msg, kind = 'ok') {
+            const stack = document.getElementById('toast-stack');
+            const t = document.createElement('div');
+            t.className = `toast ${kind}`;
+            t.textContent = msg;
+            stack.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 3200);
+        }
+
+        // ── Hub connection state ──────────────────────────────────────
+        function setHubConnected(ok) {
+            const banner = document.getElementById('conn-banner');
+            const dot = document.getElementById('hub-status-dot');
+            const txt = document.getElementById('hub-status-text');
+            if (ok === hubConnected) return;
+            hubConnected = ok;
+            banner.classList.toggle('hidden-banner', ok);
+            if (ok) {
+                dot.className = 'dot dot-ok';
+                txt.innerText = 'Alive'; txt.className = 'font-semibold';
+                toast('Reconnected to Hub', 'ok');
+            } else {
+                dot.className = 'dot dot-bad';
+                txt.innerText = 'Down'; txt.className = 'font-semibold'; txt.style.color = 'var(--red)';
+            }
+        }
+        async function fetchJSON(path, opts) {
+            const res = await fetch(`${API_BASE}${path}`, opts);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            setHubConnected(true);
+            document.getElementById('hub-status-text').style.color = '';
+            document.getElementById('last-updated').innerText = new Date().toLocaleTimeString();
+            return res.json();
+        }
+
+        // ── Tabs ──────────────────────────────────────────────────────
+        function switchTab(tab) {
+            activeTab = tab;
+            ['mesh', 'agents', 'health', 'sphere'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.toggle('hidden', tab !== t);
+                const btn = document.getElementById(`tab-${t}`);
+                btn.classList.toggle('active', tab === t);
+                btn.setAttribute('aria-selected', tab === t ? 'true' : 'false');
+            });
+            lucide.createIcons();
+            stopHealthMonitoring();
+            if (tab === 'health') startHealthMonitoring();
+            if (tab === 'sphere') {
+                if (currentSessionId) {
+                    updateSemanticSphere(currentSessionId);
+                } else {
+                    document.getElementById('sphere-hint')?.classList.remove('hidden');
+                    const lbl = document.getElementById('sphere-session-label');
+                    if (lbl) lbl.innerText = 'No session selected';
+                }
+            }
+        }
+
+        // ── Init ──────────────────────────────────────────────────────
+        async function init() {
+            lucide.createIcons();
+            await refreshAgents();
+            await refreshSessions();
+            await refreshAgentsGrid();
+            meshPollInterval = setInterval(async () => {
+                await refreshAgents();
+                await refreshSessions();
+                if (activeTab === 'agents') await refreshAgentsGrid();
+            }, 5000);
+        }
+        async function refreshAll() {
+            const icon = document.querySelector('#refresh-btn svg') || document.querySelector('#refresh-btn i');
+            icon?.classList.add('spinning');
+            try {
+                await refreshAgents();
+                await refreshSessions();
+                await refreshAgentsGrid();
+                if (activeTab === 'health') await refreshHealth();
+            } finally {
+                setTimeout(() => icon?.classList.remove('spinning'), 500);
+            }
+        }
+
+        const AVATAR_COLORS = ['#2F62F4', '#7A5AF0', '#16915B', '#B4690E', '#D64545', '#0E7490'];
+
+        // ── Agents sidebar ────────────────────────────────────────────
+        async function refreshAgents() {
+            try {
+                const agents = await fetchJSON('/api/agents');
+                const list = document.getElementById('agent-list');
+                list.innerHTML = agents.map((a, i) => {
+                    const ip = a.metadata?.origin_ip || 'unknown';
+                    const isLocal = ip === '127.0.0.1' || ip === '::1';
+                    const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
+                    return `
+                        <div class="p-2 rounded-lg glass-hover cursor-default">
+                            <div class="flex items-center gap-2.5">
+                                <div class="avatar" style="background:${color}">${esc(a.name[0]?.toUpperCase() || '?')}</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-[13px] font-medium truncate">${esc(a.name)}</span>
+                                        <span class="text-[10px] mono muted2">${esc(a.origin_protocol)}</span>
+                                    </div>
+                                    <div class="text-[11px] mono muted2 truncate flex items-center gap-1.5">
+                                        ${esc(a.tether_id)}
+                                        ${isLocal ? '<span class="st-healthy">· local</span>' : `<span style="color: var(--violet);">· ${esc(ip)}</span>`}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('') || '<div class="muted2 text-[12px] text-center py-4">No agents tethered</div>';
+                document.getElementById('sidebar-agent-count').innerText = agents.length;
+            } catch (e) { setHubConnected(false); }
+        }
+
+        // ── Agents grid ───────────────────────────────────────────────
+        async function refreshAgentsGrid() {
+            try {
+                const agents = await fetchJSON('/api/agents');
+                const grid = document.getElementById('agents-grid');
+                if (agents.length === 0) {
+                    grid.innerHTML = '<div class="col-span-3 text-center muted2 py-12">No agents registered on the Hub</div>';
+                    return;
+                }
+                grid.innerHTML = agents.map((a, i) => {
+                    const ip = a.metadata?.origin_ip || 'unknown';
+                    const isLocal = ip === '127.0.0.1' || ip === '::1';
+                    const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
+                    const caps = (a.capabilities?.tasks || []);
+                    const capChips = caps.length
+                        ? caps.map(c => `<span class="chip">${esc(c)}</span>`).join(' ')
+                        : '<span class="muted2 text-[12px]">none</span>';
+                    return `
+                        <div class="card hoverable p-5 fade-in">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="avatar" style="background:${color}; width:40px; height:40px; font-size:15px; border-radius:10px;">${esc(a.name[0]?.toUpperCase() || '?')}</div>
+                                <div class="min-w-0">
+                                    <div class="font-semibold text-[14px] truncate">${esc(a.name)}</div>
+                                    <div class="text-[11px] mono muted2 truncate">${esc(a.tether_id)}</div>
+                                </div>
+                            </div>
+                            <div class="space-y-2.5 text-[13px]">
+                                <div class="flex items-center justify-between">
+                                    <span class="muted">Protocol</span>
+                                    <span class="chip chip-accent">${esc(a.origin_protocol)}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="muted">Origin</span>
+                                    <span class="text-[12px] mono flex items-center gap-1.5" style="color:${isLocal ? 'var(--green)' : 'var(--violet)'}">
+                                        <span class="dot" style="background:${isLocal ? 'var(--green)' : 'var(--violet)'}"></span>
+                                        ${isLocal ? 'Local (127.0.0.1)' : esc(ip)}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="muted block mb-1.5">Capabilities</span>
+                                    <div class="flex flex-wrap gap-1">${capChips}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
+                lucide.createIcons();
+            } catch (e) { setHubConnected(false); }
+        }
+
+        // ── Sessions ──────────────────────────────────────────────────
+        async function refreshSessions() {
+            try {
+                const sessions = await fetchJSON('/api/sessions');
+                document.getElementById('session-count').innerText = sessions.length;
+                const grid = document.getElementById('session-grid');
+                grid.innerHTML = sessions.map(s => `
+                    <div data-sid="${esc(s.session_id)}" data-title="${esc(s.title)}"
+                         onclick="selectSession(this.dataset.sid, this.dataset.title)"
+                         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectSession(this.dataset.sid,this.dataset.title)}"
+                         role="button" tabindex="0" aria-label="Open session ${esc(s.title)}"
+                         class="p-2.5 rounded-lg cursor-pointer glass-hover fade-in border-l-2"
+                         style="border-left-color:${currentSessionId === s.session_id ? 'var(--accent)' : 'transparent'}; ${currentSessionId === s.session_id ? 'background: var(--accent-weak);' : ''}">
+                        <div class="flex justify-between items-start mb-1.5 gap-2">
+                            <span class="text-[13px] font-medium truncate">${esc(s.title)}</span>
+                            <span class="text-[10px] mono muted2 shrink-0">${esc(s.session_id.slice(0,8))}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="flex -space-x-1.5">
+                                ${s.participants.map(p => `<div class="w-4 h-4 rounded-md border border-white flex items-center justify-center text-[7px] text-white" style="background: var(--text-3);" title="${esc(p)}">${esc(p[0]?.toUpperCase() || '?')}</div>`).join('')}
+                            </div>
+                            <span class="text-[11px] muted2">${s.participants.length} agents</span>
+                            <span class="text-[11px] mono muted2 ml-auto">${s.messages?.length || 0} msgs</span>
+                        </div>
+                    </div>`).join('') || '<div class="muted2 text-[12px] text-center py-4">No sessions</div>';
+            } catch (e) { setHubConnected(false); }
+        }
+
+        async function selectSession(id, title) {
+            currentSessionId = id;
+            document.getElementById('active-session-title').innerText = title;
+            const input = document.getElementById('msg-input');
+            const sendBtn = document.getElementById('send-btn');
+            input.disabled = false; sendBtn.disabled = false;
+            input.placeholder = `Send a message to “${title}”…`;
+            refreshSessions();
+            try {
+                const msgs = await fetchJSON(`/api/sessions/${id}/messages`);
+                renderMessages(msgs);
+            } catch (e) { setHubConnected(false); }
+            updateSemanticSphere(id);
+            updateBackups(id);
+            startStream(id);
+        }
+
+        function renderMessages(msgs) {
+            const container = document.getElementById('chat-stream');
+            container.innerHTML = msgs.map(m => `
+                <div class="flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'} fade-in">
+                    <div class="flex items-center gap-2 mb-1 px-1">
+                        <span class="text-[11px] mono ${m.role === 'user' ? 'muted' : 'accent'}">${esc(m.sender_name)}</span>
+                        <span class="text-[10px] mono muted2">${esc(m.timestamp?.slice(11,19) || '')}</span>
+                    </div>
+                    <div class="bubble ${m.role === 'user' ? 'bubble-out' : 'bubble-in'}">${esc(m.content)}</div>
+                </div>`).join('') || '<div class="h-full flex items-center justify-center muted2 text-[13px]">No messages yet</div>';
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function updateSemanticSphere(id) {
+            const orbitals = document.getElementById('orbitals-container');
+            const entities = document.getElementById('entity-list');
+            const center = document.getElementById('center-node');
+            const links = document.getElementById('sphere-links');
+            const linkCount = document.getElementById('sphere-link-count');
+            orbitals.innerHTML = '';
+            entities.innerHTML = '';
+            center.classList.remove('scale-0'); center.classList.add('scale-100');
+            const cloud = document.getElementById('entity-cloud');
+            if (cloud) cloud.innerHTML = '';
+            document.getElementById('sphere-hint')?.classList.add('hidden');
+            const lbl = document.getElementById('sphere-session-label');
+            if (lbl) lbl.innerText = id.slice(0, 8);
+
+            let data;
+            try {
+                data = await fetchJSON(`/api/sessions/${id}/related`);
+            } catch (e) {
+                orbitals.innerHTML = '<div class="st-unhealthy text-[12px] text-center pt-12">Map unavailable</div>';
+                if (links) links.innerHTML = '<div class="st-unhealthy text-[12px] text-center p-4">Map unavailable</div>';
+                if (linkCount) linkCount.innerText = '—';
+                return;
+            }
+
+            // Backend returns `related` as an object { session_id: score }, not an array.
+            const related = Object.entries(data.related || {}).sort((a, b) => b[1] - a[1]).slice(0, 12);
+            const entityList = Array.isArray(data.entities) ? data.entities : [];
+            const radius = 92;
+
+            if (!related.length) {
+                orbitals.innerHTML = '<div class="muted2 text-[12px] text-center pt-12">No neural links</div>';
+            } else {
+                const maxScore = Math.max(...related.map(([, s]) => s), 1);
+                related.forEach(([sid, score], i) => {
+                    const duration = 18 + (i % 5) * 3;
+                    const angle = (360 / related.length) * i;
+                    const node = document.createElement('div');
+                    node.className = 'absolute orbit-node w-9 h-9 rounded-full cursor-pointer flex items-center justify-center text-[8px] mono transition-all';
+                    node.style.setProperty('--radius', `${radius}px`);
+                    node.style.setProperty('--duration', `${duration}s`);
+                    node.style.animationDelay = `${-(duration * i / related.length)}s`;
+                    node.style.transform = `rotate(${angle}deg) translateX(${radius}px) rotate(${-angle}deg)`;
+                    node.style.opacity = String(0.5 + 0.5 * (score / maxScore));
+                    node.title = `${sid.slice(0,8)} · ${score} shared ${score === 1 ? 'entity' : 'entities'}`;
+                    node.innerHTML = `<span>${esc(sid.slice(0,5))}</span>`;
+                    node.onclick = () => selectSession(sid, `Linked · ${sid.slice(0,8)}`);
+                    orbitals.appendChild(node);
+                });
+            }
+
+            if (links) {
+                links.innerHTML = related.length
+                    ? related.map(([sid, score]) => `
+                        <div data-sid="${esc(sid)}" data-title="Linked · ${esc(sid.slice(0,8))}"
+                             onclick="selectSession(this.dataset.sid, this.dataset.title)"
+                             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectSession(this.dataset.sid,this.dataset.title)}"
+                             role="button" tabindex="0"
+                             class="p-2 rounded-lg glass-hover cursor-pointer flex items-center justify-between gap-2">
+                            <span class="text-[11px] mono accent truncate">${esc(sid.slice(0,12))}</span>
+                            <span class="text-[10px] mono muted2 shrink-0">${score} shared</span>
+                        </div>`).join('')
+                    : '<div class="muted2 text-[12px] text-center p-4">No linked sessions</div>';
+            }
+            if (linkCount) linkCount.innerText = String(related.length);
+
+            if (!entityList.length) {
+                entities.innerHTML = '<span class="muted2 text-[12px]">No entities</span>';
+            } else {
+                entityList.forEach(ent => {
+                    if (cloud) {
+                        const p = document.createElement('div');
+                        p.className = 'absolute w-1 h-1 rounded-full';
+                        p.style.background = 'var(--accent-line)';
+                        p.style.left = `${Math.random() * 100}%`;
+                        p.style.top = `${Math.random() * 100}%`;
+                        cloud.appendChild(p);
+                    }
+                    const chip = document.createElement('span');
+                    chip.className = 'chip chip-accent';
+                    chip.innerText = ent;
+                    entities.appendChild(chip);
+                });
+            }
+        }
+
+        function updateBackups(id) {
+            document.getElementById('backups-view').innerHTML = '<div class="muted2 text-[12px] text-center py-2">No snapshots</div>';
+        }
+
+        // ── Stream ────────────────────────────────────────────────────
+        function setStreamStatus(text, kind) {
+            const el = document.getElementById('stream-status');
+            el.innerText = text;
+            const map = {
+                live:  ['var(--green-weak)', 'var(--green)'],
+                wait:  ['var(--amber-weak)', 'var(--amber)'],
+                error: ['var(--red-weak)', 'var(--red)'],
+                off:   ['#F1F3F5', 'var(--text-3)'],
+            };
+            const [bg, fg] = map[kind] || map.off;
+            el.style.background = bg; el.style.color = fg;
+        }
+
+        function startStream(id, attempt = 0) {
+            if (eventSource) eventSource.close();
+            if (streamRetry) { clearTimeout(streamRetry); streamRetry = null; }
+            setStreamStatus(attempt ? `RECONNECT ${attempt}…` : 'CONNECTING…', 'wait');
+            eventSource = new EventSource(`${API_BASE}/api/sessions/${id}/stream`);
+            eventSource.onmessage = (e) => {
+                let data; try { data = JSON.parse(e.data); } catch { return; }
+                if (data.event_type !== 'message') return;
+                const container = document.getElementById('chat-stream');
+                const ts = data.timestamp?.slice(11,19) || new Date().toLocaleTimeString();
+                const div = document.createElement('div');
+                div.className = `flex flex-col ${data.role === 'user' ? 'items-end' : 'items-start'} fade-in`;
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 mb-1 px-1">
+                        <span class="text-[11px] mono ${data.role === 'user' ? 'muted' : 'accent'}">${esc(data.sender_name)}</span>
+                        <span class="text-[10px] mono muted2">${esc(ts)}</span>
+                    </div>
+                    <div class="bubble ${data.role === 'user' ? 'bubble-out' : 'bubble-in'}">${esc(data.content)}</div>`;
+                container.appendChild(div);
+                container.scrollTop = container.scrollHeight;
+            };
+            eventSource.onopen = () => setStreamStatus('LIVE', 'live');
+            eventSource.onerror = () => {
+                eventSource.close();
+                if (currentSessionId !== id) return;
+                const delay = Math.min(1000 * 2 ** attempt, 15000);
+                setStreamStatus('RECONNECTING…', 'error');
+                streamRetry = setTimeout(() => startStream(id, attempt + 1), delay);
+            };
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('msg-input');
+            const content = input.value.trim();
+            if (!content) return;
+            if (!currentSessionId) { toast('Select a session first', 'err'); return; }
+            const prev = content;
+            input.value = '';
+            try {
+                const res = await fetch(`${API_BASE}/api/sessions/${currentSessionId}/messages`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sender: 'god-view', sender_name: 'God View', content, role: 'user' })
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                setHubConnected(true);
+            } catch (e) {
+                input.value = prev;
+                setHubConnected(false);
+                toast('Failed to send — message restored', 'err');
+            }
+        }
+
+        // ── Health monitor ────────────────────────────────────────────
+        async function refreshHealth() {
+            try {
+                const d = await fetchJSON('/api/health/detailed');
+                document.getElementById('health-hub-status').innerText = d.hub.status.replace(/^\w/, c => c.toUpperCase());
+                document.getElementById('health-hub-version').innerText = 'v' + d.hub.version;
+                document.getElementById('health-agent-count').innerText = d.agents.total;
+                document.getElementById('health-session-count').innerText = d.sessions.total;
+                document.getElementById('health-sub-count').innerText = d.event_bus.subscriber_count;
+                document.getElementById('health-pool-count').innerText = d.bridge.pool.total_connections;
+
+                const persistEl = document.getElementById('health-persist-status');
+                const persistDot = document.getElementById('health-persist-dot');
+                const persistPath = document.getElementById('health-persist-path');
+                if (d.persistence.enabled) {
+                    persistEl.innerText = 'On'; persistEl.className = 'text-[19px] font-semibold st-healthy';
+                    persistDot.className = 'dot dot-ok';
+                    persistPath.innerText = d.persistence.db_path || 'active';
+                } else {
+                    persistEl.innerText = 'Off'; persistEl.className = 'text-[19px] font-semibold muted';
+                    persistDot.className = 'dot dot-idle';
+                    persistPath.innerText = 'in-memory';
+                }
+
+                const agentTable = document.getElementById('health-agent-table');
+                document.getElementById('health-agent-detail-count').innerText = `${d.agents.total} agents`;
+                if (!d.agents.details.length) {
+                    agentTable.innerHTML = '<tr><td colspan="7" class="p-6 text-center muted2 text-[13px]">No agents registered</td></tr>';
+                } else {
+                    agentTable.innerHTML = d.agents.details.map(a => `
+                        <tr class="border-b" style="border-color: var(--border);">
+                            <td class="px-3 py-2.5">
+                                <div class="text-[13px] font-medium">${esc(a.name)}</div>
+                                <div class="text-[11px] mono muted2">${esc(a.tether_id)}</div>
+                            </td>
+                            <td class="px-3 py-2.5"><span class="chip chip-accent">${esc(a.protocol)}</span></td>
+                            <td class="px-3 py-2.5"><span class="st-${esc(a.status)} bg-${esc(a.status)} text-[10px] mono uppercase font-semibold px-1.5 py-0.5 rounded border">${esc(a.status)}</span></td>
+                            <td class="px-3 py-2.5 text-[11px] mono" style="color:${a.origin_ip === '127.0.0.1' ? 'var(--green)' : 'var(--violet)'}">${esc(a.origin_ip || '—')}</td>
+                            <td class="px-3 py-2.5 text-right mono text-[12px] ${a.latency_ms > 0 ? '' : 'muted2'}">${a.latency_ms > 0 ? a.latency_ms + 'ms' : '—'}</td>
+                            <td class="px-3 py-2.5 text-right mono text-[12px] ${a.failures > 0 ? 'st-unhealthy' : 'muted2'}">${a.failures}</td>
+                            <td class="px-3 py-2.5 text-right mono text-[12px] ${a.successes > 0 ? 'st-healthy' : 'muted2'}">${a.successes}</td>
+                        </tr>`).join('');
+                }
+
+                const sessList = document.getElementById('health-session-list');
+                document.getElementById('health-session-detail-count').innerText = `${d.sessions.total} sessions`;
+                if (!d.sessions.details.length) {
+                    sessList.innerHTML = '<div class="muted2 text-[13px] text-center p-4">No active sessions</div>';
+                } else {
+                    sessList.innerHTML = d.sessions.details.map(s => `
+                        <div class="p-2.5 rounded-lg border" style="border-color: var(--border);">
+                            <div class="flex justify-between items-start mb-1.5 gap-2">
+                                <span class="text-[13px] font-medium truncate">${esc(s.title)}</span>
+                                <span class="text-[10px] mono muted2 shrink-0">${esc(s.session_id.slice(0,8))}</span>
+                            </div>
+                            <div class="grid grid-cols-4 gap-1.5 text-[11px] mono">
+                                <div><span class="muted2">St</span> <span class="st-healthy">${esc(s.status)}</span></div>
+                                <div><span class="muted2">Msg</span> <span>${s.messages}</span></div>
+                                <div><span class="muted2">P</span> <span>${s.participants}</span></div>
+                                <div><span class="muted2">T</span> <span>${s.active_tasks}</span></div>
+                                <div><span class="muted2">Pol</span> <span class="accent">${esc(s.turn_policy.slice(0,4))}</span></div>
+                                <div><span class="muted2">Turn</span> <span>${s.current_turn}/${s.max_turns}</span></div>
+                                <div><span class="muted2">HITL</span> <span style="color:${s.human_in_loop ? 'var(--amber)' : 'var(--text-3)'}">${s.human_in_loop ? 'ON' : 'OFF'}</span></div>
+                            </div>
+                        </div>`).join('');
+                }
+
+                const row = (label, val, color) => `<div class="flex justify-between text-[13px]"><span class="muted">${label}</span><span class="mono" ${color ? `style="color:${color}"` : ''}>${val}</span></div>`;
+                document.getElementById('health-bridge-stats').innerHTML =
+                    row('Total Connections', d.bridge.pool.total_connections) +
+                    row('In Use', d.bridge.pool.in_use, 'var(--accent)') +
+                    row('Idle', d.bridge.pool.idle, 'var(--green)') +
+                    row('Endpoints', d.bridge.pool.endpoints) +
+                    row('Max / Endpoint', d.bridge.pool_max_per_endpoint) +
+                    row('Execute Timeout', d.bridge.execute_timeout + 's', 'var(--amber)');
+                document.getElementById('health-retry-stats').innerHTML =
+                    row('Max Retries', d.bridge.retry_policy.max_retries) +
+                    row('Base Delay', d.bridge.retry_policy.base_delay + 's') +
+                    row('Max Delay', d.bridge.retry_policy.max_delay + 's') +
+                    row('Bus Max Subs', d.event_bus.max_subscribers) +
+                    row('Subscribers', d.event_bus.subscriber_count, 'var(--green)');
+
+                lucide.createIcons();
+            } catch (e) { setHubConnected(false); }
+        }
+
+        function startHealthMonitoring() {
+            refreshHealth();
+            healthPollInterval = setInterval(refreshHealth, 3000);
+            startHealthEventLog();
+        }
+        async function startHealthEventLog() {
+            try {
+                const sessions = await fetchJSON('/api/sessions');
+                if (sessions.length > 0) {
+                    const sid = sessions[0].session_id;
+                    if (healthEventSource) healthEventSource.close();
+                    healthEventSource = new EventSource(`${API_BASE}/api/sessions/${sid}/stream`);
+                    healthEventSource.onmessage = (e) => { try { appendHealthEvent(JSON.parse(e.data)); } catch {} };
+                    healthEventSource.onopen = () => { document.getElementById('health-live-dot').className = 'dot dot-ok'; };
+                    healthEventSource.onerror = () => { document.getElementById('health-live-dot').className = 'dot dot-bad'; };
+                }
+            } catch (e) {}
+        }
+        function appendHealthEvent(data) {
+            const log = document.getElementById('health-event-log');
+            const time = new Date().toLocaleTimeString();
+            const eventType = data.event_type || 'unknown';
+            const sender = data.sender_name || data.sender || 'system';
+            const content = (data.content || '').slice(0, 100);
+            const colors = { message: 'var(--accent)', task_complete: 'var(--green)', agent_join: 'var(--violet)', human_gate: 'var(--amber)', system: 'var(--text-2)' };
+            const color = colors[eventType] || 'var(--text-2)';
+            const entry = document.createElement('div');
+            entry.className = 'flex gap-2 py-1 border-b fade-in';
+            entry.style.borderColor = 'var(--border)';
+            entry.innerHTML = `<span class="muted2 text-[11px]">${esc(time)}</span> <span class="font-semibold text-[11px]" style="color:${color}">${esc(eventType.toUpperCase())}</span> <span class="muted text-[11px]">${esc(sender)}:</span> <span class="muted2 truncate flex-1 text-[11px]">${esc(content)}</span>`;
+            log.prepend(entry);
+            while (log.children.length > 50) log.removeChild(log.lastChild);
+        }
+        function stopHealthMonitoring() {
+            if (healthPollInterval) { clearInterval(healthPollInterval); healthPollInterval = null; }
+            if (healthEventSource) { healthEventSource.close(); healthEventSource = null; }
+        }
+
+        init();
+    </script>
+</body>
+</html>
