@@ -82,48 +82,58 @@ The `api` service registers as `hayekswarm` and the `web` service as `hayekswarm
 
 ## API Endpoints
 
-### Health & Status
+All application routes are served under the `/api` prefix. The interactive
+OpenAPI docs are available at `/docs` when the server is running.
+
+### System
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/` | Web dashboard (HTML) |
 | GET | `/health` | Health check |
-| GET | `/status` | System status with agent counts |
-
-### Agents
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/agents` | List all registered agents |
-| POST | `/agents` | Register a new agent |
-| GET | `/agents/{id}` | Get agent details |
-| DELETE | `/agents/{id}` | Unregister an agent |
-
-### Auctions
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/auctions` | List active auctions |
-| POST | `/auctions` | Create a new auction |
-| GET | `/auctions/{id}` | Get auction details |
-| POST | `/auctions/{id}/bid` | Place a bid |
-| POST | `/auctions/{id}/close` | Close an auction |
+| GET | `/api/stats` | System statistics |
 
 ### Tasks
 
+Submitting a task runs a first-price auction across the 10-D Council internally —
+there is no separate auction API; the winning dimension and bid are returned on
+the task record.
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/tasks` | List tasks |
-| POST | `/tasks` | Create a task |
-| GET | `/tasks/{id}` | Get task status |
-| POST | `/tasks/{id}/assign` | Assign agent to task |
+| POST | `/api/tasks` | Submit a task (triggers a council auction) |
+| GET | `/api/tasks` | List tasks |
+| GET | `/api/tasks/{task_id}` | Get task status, winner, and result |
+
+### Agents (council dimensions)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/agents` | List the council's dimension agents |
+| GET | `/api/agents/{dimension}` | Get a single dimension's agent |
+
+### Market
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/market` | Market overview (wealth, activity) |
+| GET | `/api/transactions` | Transaction ledger |
+
+### Keys
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/keys` | Create an API key |
+| GET | `/api/keys` | List API keys |
 
 ### VoidTether Mesh
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/mesh/nodes` | List mesh nodes |
-| POST | `/mesh/connect` | Connect to a mesh node |
-| GET | `/mesh/adapters` | List available protocol adapters |
+| GET | `/api/mesh/agents` | List registered mesh agents |
+| POST | `/api/mesh/register` | Register a mesh agent |
+| POST | `/api/mesh/unregister/{tether_id}` | Unregister a mesh agent |
+| GET | `/api/mesh/stats` | Mesh statistics |
 
 ---
 
@@ -219,35 +229,48 @@ Agents announce themselves via the mesh discovery service. The mesh maintains a 
 
 ## How to Register External Agents
 
-### Via API
+### Via the HayekSwarm API
+
+`POST /api/mesh/register` takes a `TetherManifest` document and requires an API
+key (create one with `POST /api/keys`, sent as the `X-API-Key` header):
 
 ```bash
-curl -X POST http://localhost:8000/agents \
+curl -X POST http://localhost:8000/api/mesh/register \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: $HAYEKSWARM_API_KEY" \
   -d '{
-    "name": "my-agent",
-    "capabilities": ["code-generation", "analysis"],
-    "endpoint": "http://agent-host:8080",
-    "protocol": "a2a",
-    "price_per_task": 0.01
+    "tether_id": "my-agent",
+    "name": "My Agent",
+    "origin_protocol": "a2a",
+    "capabilities": {"tasks": ["code-generation", "analysis"]},
+    "protocols": [{"protocol": "a2a", "endpoint_url": "http://agent-host:8080"}]
   }'
 ```
 
-### Via SDK
+### Via the VoidTether SDK
+
+The `VoidTetherClient` is async and connects to a VoidTether hub. Set a shared
+`VOIDTETHER_HMAC_SECRET` on both ends (there is no default secret):
 
 ```python
-from sdk.client import HayekSwarmClient
+import asyncio
+from sdk.client import VoidTetherClient
 
-client = HayekSwarmClient(api_url="http://localhost:8000")
-agent = client.register_agent(
-    name="my-agent",
-    capabilities=["code-generation"],
-    endpoint="http://agent-host:8080",
-    protocol="a2a",
-)
+async def main():
+    client = VoidTetherClient(
+        hub_url="http://localhost:8901",
+        tether_id="my-agent",
+        name="My Agent",
+        protocol="a2a",
+        capabilities={"tasks": ["code-generation"]},
+    )
+    async with client:
+        await client.register()
+
+asyncio.run(main())
 ```
 
-### Via VoidTether CLI
+### Via the VoidTether CLI
 
 ```bash
 python -m voidtether.cli.vt register \

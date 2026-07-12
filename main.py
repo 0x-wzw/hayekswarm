@@ -71,8 +71,8 @@ def _run_training(args):
     print()
 
     if args.domain == "math":
-        from hayekmas.adapters.researchworld import ResearchWorldTrainer
-        trainer = ResearchWorldTrainer(
+        from hayekmas.adapters.researchworld import ResearchTrainer
+        trainer = ResearchTrainer(
             num_epochs=args.epochs,
             ckpt_save_path="outputs/checkpoints",
             verbose=args.verbose,

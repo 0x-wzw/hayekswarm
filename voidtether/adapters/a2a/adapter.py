@@ -3,7 +3,7 @@
 from __future__ import annotations
 from typing import Any
 from voidtether.core.bridge import BaseAdapter
-from voidtether.core.manifest import TetherManifest, Protocol
+from voidtether.core.manifest import TetherManifest, Protocol, ProtocolEndpoint
 
 
 class A2AAdapter(BaseAdapter):
@@ -103,9 +103,9 @@ def a2a_card_to_manifest(card: dict[str, Any]) -> TetherManifest:
             "modalities": card.get("capabilities", {}).get("modalities", ["text"]),
             "streaming": card.get("capabilities", {}).get("streaming", False),
         },
-        protocols=[{
-            "protocol": "a2a",
-            "agent_card_url": card.get("url"),
-            "endpoint_url": card.get("url"),
-        }],
+        protocols=[ProtocolEndpoint(
+            protocol=Protocol.A2A,
+            agent_card_url=card.get("url"),
+            endpoint_url=card.get("url"),
+        )],
     )

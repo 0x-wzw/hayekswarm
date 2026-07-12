@@ -174,9 +174,14 @@ class Auctioneer:
             payment: The payment amount (winner's bid).
             prev_winner: The previous auction winner (recipient), or None.
         """
-        winner.lose_money(payment)
-        if prev_winner is not None and prev_winner.id != winner.id:
+        if prev_winner is None:
+            # First action in the chain: payment goes to the void (bucket-brigade).
+            winner.lose_money(payment)
+        elif prev_winner.id != winner.id:
+            winner.lose_money(payment)
             prev_winner.gain_money(payment)
+        # else: winner pays itself (won two steps in a row) — net zero, so do
+        # nothing. Debiting unconditionally here would destroy money.
 
     # ── Reward processing ───────────────────────────────────────────────
 

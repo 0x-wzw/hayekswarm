@@ -334,41 +334,31 @@ class Council:
 
     def good_birth(self) -> CouncilAgent | None:
         """
-        Good-birth mutation: clone the richest agent.
+        Good-birth mutation: exploit the richest agent by mutating it in place.
 
-        The richest agent is cloned with a mutated system prompt for
-        exploration. Returns the new agent or None if no agent exists.
+        The council holds exactly one agent per dimension, so cloning the richest
+        into its own dimension slot (as this used to do) would DELETE the richest
+        and discard its accumulated wealth — the opposite of exploitation. Instead
+        we mutate the richest agent in place: it survives, keeps its wealth, and
+        adopts an exploratory prompt. Returns the mutated agent, or None if empty.
         """
         richest = self.get_richest_agent()
         if richest is None:
             return None
 
-        # Clone: create a new agent of the same dimension
-        dim = richest.dimension
-        new_agent = create_agent_for_dimension(
-            dim,
-            name=f"{richest.name}-clone-{random.randint(1000, 9999)}",
-            wealth=self._initial_wealth,
-        )
-
-        # Mutate: append a mutation marker to the system prompt
-        new_agent.frozen_system_prompt += (
+        # Mutate in place — preserve the agent and its wealth.
+        richest.agent.frozen_system_prompt += (
             "\n\n[GOOD-BIRTH MUTATION] You are an exploratory variant. "
-            "Try different approaches and strategies than your parent."
+            "Try different approaches and strategies than before."
         )
-
-        # Register in council
-        ca = CouncilAgent(agent=new_agent, dimension=dim)
-        ca.agent.lineage = richest.agent.lineage + [richest.name]
-        self._agents[dim] = ca
+        richest.agent.lineage = richest.agent.lineage + [richest.name]
 
         logger.info(
-            "Good birth: cloned %s -> %s (dim=%s)",
+            "Good birth: mutated richest %s in place (dim=%s)",
             richest.name,
-            new_agent.name,
-            dim,
+            richest.dimension,
         )
-        return ca
+        return richest
 
     def bad_birth(self) -> CouncilAgent | None:
         """

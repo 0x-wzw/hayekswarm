@@ -191,17 +191,15 @@ class HayekEngine:
                 winner_tether = tid
                 break
 
-        # Process bucket-brigade payment
-        if self._last_winner_tether and self._last_winner_dim:
-            # Winner pays bid to previous winner
-            result.winner.agent.apply_payment(result.winning_bid)
-            # Find previous winner's agent and pay them
+        # Bucket-brigade payment. NOTE: council.deliberate() has ALREADY debited
+        # the winner's winning_bid (Council.deliberate -> agent.apply_payment), so
+        # we must NOT debit again here — doing so charged the winner twice. We only
+        # credit the previous winner; the first winner's bid stays debited (it goes
+        # to the "void" / treasury).
+        if self._last_winner_dim:
             prev_ca = self.council.get_agent_by_dimension(self._last_winner_dim)
             if prev_ca:
                 prev_ca.agent.apply_reward(result.winning_bid)
-        else:
-            # First auction: winner pays bid (goes to "void" / treasury)
-            result.winner.agent.apply_payment(result.winning_bid)
 
         # Track for next bucket-brigade
         self._last_winner_tether = winner_tether

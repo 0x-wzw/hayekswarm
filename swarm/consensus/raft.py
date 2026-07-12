@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import os
 import random
 import time
 from collections import defaultdict
@@ -330,6 +331,7 @@ class RaftProtocol:
         election_timeout_min: float = 0.15,
         election_timeout_max: float = 0.3,
         heartbeat_interval: float = 0.05,
+        storage_path: str | None = None,
     ):
         self.node_id = node_id
         self.peers = peers
@@ -337,10 +339,12 @@ class RaftProtocol:
         self.election_timeout_max = election_timeout_max
         self.heartbeat_interval = heartbeat_interval
 
-        # Persistent state
+        # Persistent state (must survive restarts — see _persist_state/_restore_state)
         self.current_term: int = 0
         self.voted_for: str | None = None
         self.log: list[RaftLogEntry] = []
+        self.storage_path = storage_path
+        self._restore_state()
 
         # Volatile state
         self.state = NodeState.FOLLOWER
@@ -350,6 +354,9 @@ class RaftProtocol:
         # Leader state
         self.next_index: dict[str, int] = {}
         self.match_index: dict[str, int] = {}
+
+        # Candidate state: peers who granted us a vote in the current election
+        self.votes_received: set[str] = set()
 
         # Async components
         self._message_queue: asyncio.Queue[RaftMessage] = asyncio.Queue()
@@ -376,6 +383,52 @@ class RaftProtocol:
         """Set callback for committed log entries."""
         self._commit_callback = callback
 
+    # ── Durable persistent state ───────────────────────────────────────
+    def _persist_state(self) -> None:
+        """Persist current_term, voted_for, and log if a storage_path is set.
+
+        Raft requires these to survive restarts so a node cannot double-vote in a
+        term or lose committed entries. No-op in in-memory mode (storage_path=None).
+        Never raises — persistence failures must not crash the protocol.
+        """
+        if not self.storage_path:
+            return
+        try:
+            data = {
+                "current_term": self.current_term,
+                "voted_for": self.voted_for,
+                "log": [
+                    {"index": e.index, "term": e.term,
+                     "command": e.command, "timestamp": e.timestamp}
+                    for e in self.log
+                ],
+            }
+            tmp = f"{self.storage_path}.tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(data, f, default=str)
+            os.replace(tmp, self.storage_path)  # atomic
+        except Exception:
+            pass
+
+    def _restore_state(self) -> None:
+        """Restore persisted term/vote/log at startup, if a snapshot exists."""
+        if not self.storage_path or not os.path.exists(self.storage_path):
+            return
+        try:
+            with open(self.storage_path, encoding="utf-8") as f:
+                data = json.load(f)
+            self.current_term = int(data.get("current_term", 0))
+            self.voted_for = data.get("voted_for")
+            self.log = [
+                RaftLogEntry(
+                    index=e["index"], term=e["term"],
+                    command=e["command"], timestamp=e.get("timestamp", 0.0),
+                )
+                for e in data.get("log", [])
+            ]
+        except Exception:
+            pass
+
     def _reset_election_timer(self) -> None:
         """Reset the election timeout with random jitter."""
         if self._election_timer:
@@ -390,12 +443,26 @@ class RaftProtocol:
             await self._start_election()
 
     async def _start_election(self) -> None:
-        """Begin leader election process."""
+        """Begin leader election process.
+
+        Votes are tallied asynchronously in _handle_vote_response, which promotes
+        this node to leader once a majority is reached. We reset the election timer
+        here so that a lost or split election automatically triggers a retry in a
+        new term instead of leaving this node stuck as a candidate forever.
+        """
         self.state = NodeState.CANDIDATE
         self.current_term += 1
         self.voted_for = self.node_id
+        self.votes_received = {self.node_id}
+        self._persist_state()
 
-        votes_received: set[str] = {self.node_id}
+        # Single-node cluster: we already have a majority.
+        if len(self.votes_received) > (len(self.peers) + 1) // 2:
+            await self._become_leader()
+            return
+
+        # Arm a fresh timeout so a failed election retries with a higher term.
+        self._reset_election_timer()
 
         # Send RequestVote RPCs to all peers
         last_log = self._last_log_entry()
@@ -409,14 +476,6 @@ class RaftProtocol:
 
         for peer in self.peers:
             asyncio.create_task(self._send_message(peer, request))
-
-        # Wait for responses
-        timeout = random.uniform(self.election_timeout_min * 2, self.election_timeout_max * 2)
-        await asyncio.sleep(timeout)
-
-        # Check if we won
-        if len(votes_received) > (len(self.peers) + 1) // 2:
-            await self._become_leader()
 
     async def _become_leader(self) -> None:
         """Transition to leader state."""
@@ -476,6 +535,7 @@ class RaftProtocol:
             command=command,
         )
         self.log.append(entry)
+        self._persist_state()
 
         # Replicate to followers
         for peer in self.peers:
@@ -489,6 +549,7 @@ class RaftProtocol:
             self.current_term = msg.term
             self.state = NodeState.FOLLOWER
             self.voted_for = None
+            self._persist_state()
 
         if msg.msg_type == MessageType.REQUEST_VOTE:
             await self._handle_request_vote(msg)
@@ -515,6 +576,7 @@ class RaftProtocol:
                 (msg.last_log_term == last_term and msg.last_log_index >= last_index)):
                 vote_granted = True
                 self.voted_for = msg.sender_id
+                self._persist_state()
                 self._reset_election_timer()
 
         response = RaftMessage(
@@ -526,9 +588,16 @@ class RaftProtocol:
         await self._send_message(msg.sender_id, response)
 
     async def _handle_vote_response(self, msg: RaftMessage) -> None:
-        """Handle response to vote request."""
-        # Counting happens in election task
-        pass
+        """Tally a vote response and become leader once a majority is reached."""
+        # Ignore stale responses or votes for an election we're no longer running.
+        if self.state != NodeState.CANDIDATE or msg.term != self.current_term:
+            return
+        if not msg.vote_granted:
+            return
+
+        self.votes_received.add(msg.sender_id)
+        if len(self.votes_received) > (len(self.peers) + 1) // 2:
+            await self._become_leader()
 
     async def _handle_append_entries(self, msg: RaftMessage) -> None:
         """Handle append entries from leader."""
@@ -557,6 +626,9 @@ class RaftProtocol:
                     else:
                         self.log.append(entry)
 
+                if msg.entries:
+                    self._persist_state()
+
                 # Update commit index
                 if msg.leader_commit > self.commit_index:
                     self.commit_index = min(msg.leader_commit, len(self.log))
@@ -584,8 +656,16 @@ class RaftProtocol:
             self.next_index[msg.sender_id] = max(1, self.next_index[msg.sender_id] - 1)
 
     async def _check_commit(self) -> None:
-        """Check if any entries can be committed."""
+        """Advance commit_index over entries replicated to a majority.
+
+        Raft §5.4.2: a leader may only *directly* commit entries from its own
+        current term. Committing a previous-term entry by replica count alone is
+        unsafe (Figure 8) — it can later be overwritten. Once a current-term entry
+        commits, all preceding entries commit indirectly via _apply_committed.
+        """
         for index in range(self.commit_index + 1, len(self.log) + 1):
+            if self.log[index - 1].term != self.current_term:
+                continue
             count = 1  # Leader counts as 1
             for peer in self.peers:
                 if self.match_index.get(peer, 0) >= index:

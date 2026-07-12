@@ -46,6 +46,16 @@ class EconomicEngine:
         # Initial agents kept as templates for replenishment via mutation
         self._initial_agents: List[EconomicAgent] = []
 
+        # Bucket-brigade credit assignment: the winner of the previous auction
+        # is the recipient of the current winner's payment. Reset between episodes
+        # via reset_payment_chain().
+        self._prev_winner: Optional[EconomicAgent] = None
+
+        # Bankrupt agents removed by the most recent check_bankruptcies() call,
+        # kept so spawn_replacements() can build bad-birth children from them
+        # (they are already gone from the population by then).
+        self._recent_bankrupts: Dict[str, EconomicAgent] = {}
+
         # Thread safety
         self._lock = threading.Lock()
 
@@ -146,10 +156,21 @@ class EconomicEngine:
                 training=True,
             )
 
-            # Process payment (first auction: no previous winner)
-            self.auctioneer.process_payment(winner, payment, prev_winner=None)
+            # Bucket-brigade: the winner pays its bid to the previous auction's
+            # winner (decentralized credit assignment). The first winner in a
+            # chain pays to the void; call reset_payment_chain() at episode
+            # boundaries to start a new chain.
+            self.auctioneer.process_payment(
+                winner, payment, prev_winner=self._prev_winner
+            )
+            self._prev_winner = winner
 
             return winner.manifest.tether_id, payment
+
+    def reset_payment_chain(self) -> None:
+        """Clear the bucket-brigade chain (call at the start of each episode)."""
+        with self._lock:
+            self._prev_winner = None
 
     # ── Reward application ────────────────────────────────────────────
 
@@ -183,9 +204,14 @@ class EconomicEngine:
                 a for a in self.population.get_all() if a.check_bankruptcy()
             ]
             removed_ids: List[str] = []
+            # Reset and repopulate the recent-bankrupts cache so spawn_replacements()
+            # can still reach these agent objects after they leave the population.
+            self._recent_bankrupts = {}
             for agent in bankrupt_agents:
                 agent.bankruptcy_episode = self.episode_count
-                removed_ids.append(agent.manifest.tether_id)
+                tid = agent.manifest.tether_id
+                removed_ids.append(tid)
+                self._recent_bankrupts[tid] = agent
                 self.population.remove_agent(agent)
                 self.bankruptcy_count += 1
             return removed_ids
@@ -212,11 +238,14 @@ class EconomicEngine:
             )
 
         with self._lock:
-            # Build lookup of tether_id -> EconomicAgent for bankrupt agents
-            bankrupt_by_tether: Dict[str, EconomicAgent] = {}
-            for agent in self.population.get_all():
-                if agent.manifest.tether_id in bankrupt_tether_ids:
-                    bankrupt_by_tether[agent.manifest.tether_id] = agent
+            # Bankrupt agents are already removed from the population by
+            # check_bankruptcies(), so look them up in the recent-bankrupts cache
+            # rather than the (now-empty-of-them) population.
+            bankrupt_by_tether: Dict[str, EconomicAgent] = {
+                tid: self._recent_bankrupts[tid]
+                for tid in bankrupt_tether_ids
+                if tid in self._recent_bankrupts
+            }
 
             for tid in bankrupt_tether_ids:
                 draw = random.random()
